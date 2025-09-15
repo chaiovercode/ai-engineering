@@ -4,6 +4,6 @@ A comprehensive exploration of AI engineering patterns, agent architectures, and
 
 ## Table of Contents
 
-- [🤖 Agents](./agents/)
-- [🎲 Random](./random/)
+- [Agents](./agents/)
+- [RAG](./rag/)
 
