@@ -5,8 +5,4 @@ A comprehensive exploration of AI engineering patterns, agent architectures, and
 ## Table of Contents
 
 - [Agents](./agents/)
-- [RAG](./rag/)
-
-
-Hello?? 
 
