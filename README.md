@@ -1,8 +1,13 @@
 # AI Engineering
 
-A comprehensive exploration of AI engineering patterns, agent architectures, and practical implementations.
+Learning to build production-ready AI systems from scratch.
 
-## Table of Contents
+## What's Here
 
-- [Agents](./agents/)
+**[ai-agents/](ai-agents/)** - Building AI agents with different frameworks
+- **[foundations/](ai-agents/foundations/)** 
+    - Core agent patterns
+
+**[prompts/](prompts/)** 
+- Prompt engineering examples
 
