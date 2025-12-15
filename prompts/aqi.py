@@ -204,8 +204,8 @@ def generate_nano_banana_art(data):
     - If London -> Double decker red bus + Black cab.
     - If Venice -> Gondola/Vaporetto.
     - If a generic city -> City buses + cars.
-    
-    Output a single short sentence describing exactly what energetic miniature vehicles should be added to the roads/water. 
+
+    Output a single short sentence describing exactly what energetic miniature vehicles should be added to the roads/water.
     Example output: "Render a cute miniature cyan-line metro train crossing a viaduct and green-and-yellow auto rickshaws on the roads."
     """
     try:
@@ -218,13 +218,52 @@ def generate_nano_banana_art(data):
     except:
         transit_instruction = "Include moving city traffic like buses and cars."
 
-    prompt = f"""
-    Present a clear, 45° top-down view of a vertical (9:16) isometric miniature 3D cartoon scene of {args['city']}, highlighting iconic landmarks centered in the composition to showcase precise and delicate modeling.
+    # --- REGIONAL BEAUTY & CULTURE CHECK ---
+    # Ask Gemini about the unique beauty, culture, and landscape of the region
+    print(f"🏔️ Discovering the beauty of {args['city']}...")
+    beauty_prompt = f"""
+    I am generating a 3D isometric miniature art of {args['city']}.
+    Describe in 2-3 sentences the UNIQUE visual beauty of this place that MUST be shown:
+    - What natural landscape defines this region? (hills, valleys, rivers, forests, beaches, etc.)
+    - What traditional/cultural architecture or structures are iconic? (traditional houses, temples, monuments)
+    - What cultural elements make it visually distinct? (tribal art, festivals, traditional dress patterns)
 
-    CRITICAL LANDMARK DETAILS:
-    - Center the most famous landmarks of {args['city']}.
+    Examples:
+    - Nagaland -> "Lush green rolling hills, traditional Naga morung (community houses) with carved wooden pillars, hornbill motifs, bamboo structures, and vibrant tribal shawl patterns in red and black."
+    - Kerala -> "Palm-fringed backwaters, traditional snake boats, red-tiled sloped roof houses, and coconut groves."
+    - Rajasthan -> "Golden sand dunes, ornate havelis with jharokha windows, colorful turbans, and majestic forts."
+
+    Output a vivid visual description focusing on what makes {args['city']} and its region UNIQUELY beautiful.
+    """
+    try:
+        beauty_response = client.models.generate_content(
+            model='gemini-2.0-flash-exp',
+            contents=beauty_prompt
+        )
+        regional_beauty = beauty_response.text.strip()
+        print(f"🎨 Regional beauty: {regional_beauty}")
+    except:
+        regional_beauty = ""
+
+    prompt = f"""
+    Create a FLOATING MINIATURE DIORAMA of {args['city']} in isometric 3D style (45° top-down view, 9:16 vertical).
+
+    CRITICAL STYLE REQUIREMENTS:
+    - The scene MUST be a FLOATING ISLAND/DIORAMA with clean edges, hovering against a soft pastel blue/grey background.
+    - Think of it as a tiny detailed 3D model on a floating platform - NOT a flat landscape photograph.
+    - The diorama should have visible depth with layered terrain (foreground, middle, background all on the floating base).
+
+    REGIONAL BEAUTY & CULTURE (MUST BE THE HERO):
+    {regional_beauty}
+    - If this is a hill region: Show DRAMATIC ROLLING GREEN HILLS as the main visual, with buildings nestled among them.
+    - If this has traditional architecture: Make it PROMINENT and CENTERED, not tiny background elements.
+    - The natural landscape (hills, rivers, forests) should be sculpted INTO the floating diorama base.
+
+    LANDMARK & SCENE DETAILS:
+    - Center the most iconic visual element (whether landmark OR landscape) prominently.
+    - Include traditional architecture and cultural structures specific to this area as key features.
     - **TRANSIT & LIFE**: {transit_instruction}
-    - Surroundings: Populate the scene with tiny people and trees to make it feel alive.
+    - Tiny people in traditional local attire, native trees and vegetation.
 
     The scene features soft, refined textures with realistic PBR materials and gentle, lifelike lighting and shadow effects. 
     
