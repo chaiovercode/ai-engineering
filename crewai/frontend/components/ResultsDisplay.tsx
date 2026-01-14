@@ -68,50 +68,6 @@ export default function ResultsDisplay({ content, onNewSearch }: ResultsDisplayP
       }}
     >
       <div style={{ width: '100%', maxWidth: '900px' }}>
-        {/* Results header */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '32px',
-          }}
-        >
-          <h2
-            style={{
-              fontSize: '18px',
-              fontWeight: 400,
-              color: colors.text,
-            }}
-          >
-            research complete
-          </h2>
-          <button
-            onClick={onNewSearch}
-            style={{
-              padding: '10px 16px',
-              fontSize: '13px',
-              backgroundColor: 'transparent',
-              color: colors.accent,
-              border: `1px solid ${colors.accent}`,
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontFamily: 'inherit',
-              transition: 'all 200ms ease',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.backgroundColor = colors.accent;
-              e.currentTarget.style.color = '#ffffff';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.backgroundColor = 'transparent';
-              e.currentTarget.style.color = colors.accent;
-            }}
-          >
-            new research
-          </button>
-        </div>
-
         {/* Content card */}
         <div
           style={{
@@ -252,15 +208,23 @@ export default function ResultsDisplay({ content, onNewSearch }: ResultsDisplayP
           )}
         </div>
 
-        {/* Action buttons */}
+        {/* Navigation and Action buttons */}
         <div
           style={{
             display: 'flex',
             gap: '12px',
-            justifyContent: 'flex-start',
+            justifyContent: 'space-between',
+            alignItems: 'center',
             flexWrap: 'wrap',
+            marginBottom: '0',
           }}
         >
+          <div
+            style={{
+              display: 'flex',
+              gap: '12px',
+            }}
+          >
           <button
             onClick={handleCopy}
             style={{
@@ -306,6 +270,32 @@ export default function ResultsDisplay({ content, onNewSearch }: ResultsDisplayP
             }}
           >
             download
+          </button>
+          </div>
+
+          <button
+            onClick={onNewSearch}
+            style={{
+              padding: '10px 16px',
+              fontSize: '12px',
+              backgroundColor: 'transparent',
+              color: colors.accent,
+              border: `1px solid ${colors.accent}`,
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              transition: 'all 200ms ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.backgroundColor = colors.accent;
+              e.currentTarget.style.color = '#ffffff';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = 'transparent';
+              e.currentTarget.style.color = colors.accent;
+            }}
+          >
+            new research
           </button>
         </div>
       </div>
