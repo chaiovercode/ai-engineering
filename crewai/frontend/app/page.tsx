@@ -48,7 +48,9 @@ export default function Home() {
     ]);
 
     await streamResearch(input, type, mode, (event) => {
+      console.log('Event received:', event.type, event.agent || '', event.progress || '');
       if (event.type === 'agent_start') {
+        console.log('Agent starting:', event.agent);
         setAgents((prev) =>
           prev.map((a) =>
             a.name === event.agent
@@ -78,8 +80,12 @@ export default function Home() {
           )
         );
       } else if (event.type === 'complete') {
+        console.log('Research complete');
         setResults(event.content || '');
-        setState('results');
+        // Delay showing results so user can see final agent states
+        setTimeout(() => {
+          setState('results');
+        }, 600);
 
         // Save to history
         if (typeof window !== 'undefined') {
