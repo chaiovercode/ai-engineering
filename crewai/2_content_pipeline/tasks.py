@@ -25,11 +25,13 @@ def get_research_tasks(topic: str, mode: str, on_start, on_progress, on_complete
         research_desc = f"""Research the topic: "{topic}"
 
         Your task is to:
-        1. Search for current info about this topic
-        2. Find what's trending and what's actually relevant
-        3. Look for good sources (but keep it real)
-        4. Put together a vibe check outline with what matters
+        1. ALWAYS do web searches to find the latest information (not old news)
+        2. Focus on recent articles, news, and updates from this week/month
+        3. Find what's trending RIGHT NOW and what's actually relevant today
+        4. Look for good sources (but keep it real)
+        5. Put together a vibe check outline with what matters
 
+        IMPORTANT: You MUST search the web for current info. Do NOT rely on outdated knowledge.
         Find recent, actually useful info that slaps. No cap."""
         research_output = """A research outline that includes:
         - What people are actually talking about
@@ -99,12 +101,14 @@ def get_research_tasks(topic: str, mode: str, on_start, on_progress, on_complete
         research_desc = f"""Conduct comprehensive research on: "{topic}"
 
         Your task is to:
-        1. Gather current, authoritative information about this topic
-        2. Identify significant trends, patterns, and relationships
-        3. Locate peer-reviewed sources and expert commentary
-        4. Develop a structured, evidence-based research outline
+        1. ALWAYS conduct web searches to gather the most current, authoritative information
+        2. Focus exclusively on recent sources (this week/month) to avoid outdated information
+        3. Identify significant trends, patterns, and relationships from today's sources
+        4. Locate latest peer-reviewed sources and current expert commentary
+        5. Develop a structured, evidence-based research outline grounded in current data
 
-        Focus on finding recent, rigorous information that establishes a strong foundation for analysis."""
+        CRITICAL: You MUST search the web for the latest information. Do NOT use outdated knowledge or information from your training data.
+        Focus on recent, rigorous information that establishes a strong foundation for analysis."""
         research_output = """A detailed research outline with:
         - Key concepts and their interrelationships
         - Documented trends and their implications

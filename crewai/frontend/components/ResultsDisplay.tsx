@@ -278,6 +278,32 @@ export default function ResultsDisplay({ content, onNewSearch }: ResultsDisplayP
           >
             download
           </button>
+          <button
+            onClick={() => {
+              const url = typeof window !== 'undefined' ? window.location.href : '';
+              navigator.clipboard.writeText(url);
+            }}
+            style={{
+              padding: '10px 18px',
+              fontSize: '12px',
+              backgroundColor: colors.accent,
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontFamily: 'inherit',
+              fontWeight: 400,
+              transition: 'all 200ms ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translate(2px, 2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translate(0, 0)';
+            }}
+          >
+            share
+          </button>
           </div>
 
           <button
