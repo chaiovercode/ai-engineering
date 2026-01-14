@@ -107,7 +107,7 @@ export default function InputSection({ onSubmit }: InputSectionProps) {
           <div
             style={{
               position: 'relative',
-              marginBottom: '32px',
+              marginBottom: '8px',
               opacity: mounted ? 1 : 0.4,
               transform: mounted ? 'scale(1)' : 'scale(0.95)',
               transition: 'all 800ms ease-out 300ms',
@@ -118,6 +118,7 @@ export default function InputSection({ onSubmit }: InputSectionProps) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder={examples[currentExample]}
+              maxLength={300}
               style={{
                 width: '100%',
                 padding: '16px 18px',
@@ -142,7 +143,21 @@ export default function InputSection({ onSubmit }: InputSectionProps) {
               }}
               autoFocus
             />
+            {/* Character counter */}
+            <div
+              style={{
+                marginTop: '6px',
+                fontSize: '10px',
+                color: input.length > 250 ? colors.error : colors.textMuted,
+                textAlign: 'right',
+                opacity: input.length > 0 ? 1 : 0,
+                transition: 'all 200ms ease',
+              }}
+            >
+              {input.length} / 300
+            </div>
           </div>
+          <div style={{ marginBottom: '24px' }} />
 
           {/* Mode selector - minimal buttons */}
           <div
