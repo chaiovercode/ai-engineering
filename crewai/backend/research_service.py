@@ -20,70 +20,47 @@ class ResearchService:
     def __init__(self):
         self.llm = ChatOpenAI(model="gpt-4o-mini")
 
-    def humanize_content(self, content: str) -> str:
-        """Humanize the research content to make it feel more natural and warm"""
-        humanize_prompt = """You are a skilled writer who transforms AI-generated text into natural, warm, and engaging writing.
+    def polish_content(self, content: str) -> str:
+        """
+        Single-pass post-processing: humanize AND highlight in one LLM call.
+        Saves ~35s by eliminating a round-trip.
+        """
+        polish_prompt = """You are an expert editor. Transform this AI-generated text in ONE pass:
 
-CRITICAL FORMATTING REQUIREMENT - You MUST use markdown headers with the # symbol:
-- Start with exactly one # Title (main title with single #)
-- Use ## Section Name for 3-5 major sections (double ##)
-- Use ### Subsection for any subsections (triple ###)
+TASK 1 - HUMANIZE:
+- Make it conversational and warm
+- Remove stiff, corporate phrasing
+- Vary sentence structure for natural flow
+- Keep all facts intact
 
-Example format:
+TASK 2 - HIGHLIGHT KEY TERMS:
+- Mark 3-5 important terms per paragraph with ==TEXT== markers
+- Highlight: statistics, key concepts, definitions, critical insights
+- Do NOT highlight text inside headers
+- Be selective (roughly 5-10% of text)
+
+FORMATTING RULES:
+- Use # for main title (single #)
+- Use ## for major sections (double ##)
+- Use ### for subsections (triple ###)
+- Do NOT use bold (**text**) for headers
+
+Example output format:
 # Main Title Here
 
-Introduction paragraph...
+Introduction with ==key concept== and natural flow...
 
-## First Major Section
+## First Section
 
-Content here...
+Content mentioning ==important stat== in a conversational way...
 
-### A Subsection
-
-More content...
-
-## Second Major Section
-
-And so on...
-
-Guidelines for the writing:
-- Use conversational language and a warm tone
-- Remove stiff, corporate phrasing
-- Add natural transitions and human observations
-- Keep the core information intact but make it readable
-- Vary sentence structure for better flow
-- Be conversational but maintain professionalism
-
-Content to humanize:
+Content to transform:
 {content}
 
-Output the humanized content. Remember: You MUST use # for title, ## for sections, ### for subsections. Do NOT use bold (**text**) for headers - only use the # markdown syntax.""".format(content=content)
+Output the final polished content with ==highlights== included. Do both tasks simultaneously.""".format(content=content)
 
-        response = self.llm.invoke(humanize_prompt)
-        return response.content if hasattr(response, 'content') else str(response)
-
-    def highlight_content(self, content: str) -> str:
-        """Highlight important text with pastel color markers"""
-        highlight_prompt = """You are a content highlighter. Your task is to identify important terms, key concepts, definitions, and critical phrases in the following content and mark them for highlighting.
-
-Guidelines:
-- Identify key terms and important concepts (3-5 per paragraph)
-- Mark definitions and technical terms
-- Highlight statistics and important data points
-- Mark critical insights and conclusions
-- Use this format: ==TEXT== for text that should be highlighted
-- IMPORTANT: Preserve ALL markdown headers exactly as they are (lines starting with #, ##, or ###)
-- Do NOT highlight text inside headers - only highlight text in paragraphs
-
-The markers will be converted to pastel color highlights. Be selective - highlight only truly important content (roughly 5-10% of the text).
-
-Content to highlight:
-{content}
-
-Output the content with ==TEXT== markers around important passages. Keep all markdown headers (# ## ###) exactly as they appear.""".format(content=content)
-
-        response = self.llm.invoke(highlight_prompt)
-        highlighted = response.content if hasattr(response, 'content') else str(response)
+        response = self.llm.invoke(polish_prompt)
+        polished = response.content if hasattr(response, 'content') else str(response)
 
         # Convert == markers to HTML spans with pastel colors
         pastel_colors = ['#FFF9C4', '#F8BBD0']
@@ -96,8 +73,8 @@ Output the content with ==TEXT== markers around important passages. Keep all mar
             color_index += 1
             return f'<span style="background-color: {color}; color: #1A1A1A; padding: 2px 4px; border-radius: 3px;">{text}</span>'
 
-        highlighted = re.sub(r'==(.*?)==', replace_highlight, highlighted)
-        return highlighted
+        polished = re.sub(r'==(.*?)==', replace_highlight, polished)
+        return polished
 
     def _extract_title(self, content: str) -> str:
         """Extract title from first non-empty line of content"""
@@ -241,23 +218,14 @@ Output the content with ==TEXT== markers around important passages. Keep all mar
                         'output': '',
                     })
 
-            # Post-processing: humanize the output
+            # Post-processing: humanize + highlight in ONE pass (saves ~35s)
             callback({
                 'type': 'agent_progress',
                 'agent': 'Content Editor',
                 'progress': 100,
-                'message': 'Humanizing output...',
+                'message': 'Polishing content...',
             })
-            humanized_content = self.humanize_content(str(result))
-
-            # Post-processing: highlight important content
-            callback({
-                'type': 'agent_progress',
-                'agent': 'Content Editor',
-                'progress': 100,
-                'message': 'Adding highlights...',
-            })
-            final_content = self.highlight_content(humanized_content)
+            final_content = self.polish_content(str(result))
 
             # Save to database
             research_id = str(uuid.uuid4())
