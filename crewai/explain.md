@@ -465,6 +465,88 @@ while (true) {
 
 ---
 
+## 10. LANGSMITH OBSERVABILITY
+
+### Q: What is LangSmith and why use it?
+**A:** LangSmith is an **observability platform** for LLM applications by LangChain. Think "Datadog for AI apps."
+
+Key capabilities:
+- **Tracing** - See every LLM call, inputs, outputs, latency, tokens
+- **Debugging** - Find exactly why a prompt failed or was slow
+- **Evaluation** - Test prompt quality at scale
+- **Monitoring** - Track production metrics and costs
+
+### Q: How did you integrate LangSmith?
+**A:** Zero-code integration via environment variables:
+```bash
+LANGCHAIN_TRACING_V2=true
+LANGCHAIN_API_KEY=lsv2_pt_xxx
+LANGCHAIN_PROJECT=zensar-research
+```
+LangChain/LangGraph automatically instruments all calls when these are set. The `load_dotenv()` in our code loads these variables.
+
+### Q: What are the key LangSmith concepts?
+**A:**
+
+| Concept | What it is |
+|---------|------------|
+| **Trace** | Full execution tree of one request |
+| **Run** | Single operation (LLM call, tool call, chain) |
+| **Span** | Nested runs within a trace |
+| **Thread** | Group of traces (same conversation/user) |
+| **Project** | Collection of traces (like "prod" vs "dev") |
+
+### Q: What gets captured in traces?
+**A:**
+- **Inputs/Outputs** - Full prompts and responses
+- **Latency** - Time per operation
+- **Token usage** - Input/output tokens + cost
+- **Metadata** - Model, temperature, etc.
+- **Errors** - Stack traces on failures
+
+### Q: Why use LangSmith over regular logging?
+**A:** "LangSmith understands LLM structure - it traces chains, agents, tool calls as a tree. Regular logs are flat text. I can see exactly which agent took 40 seconds, what prompt it used, and how many tokens it consumed."
+
+### Q: How do you debug a slow LLM app with LangSmith?
+**A:** "Open LangSmith, sort by latency, click the slowest trace. Expand the tree to see which node is the bottleneck. Check if it's the LLM call or a tool (like search). Optimize that specific step."
+
+### Q: How does LangSmith help with hallucination debugging?
+**A:** "I can see the exact prompt and context sent to the LLM. If it hallucinated, I check: was the search result missing? Was the prompt unclear? I can then fix the specific issue."
+
+### Q: What's the difference between Traces and Runs?
+**A:** "A Trace is the full tree for one request. Runs are individual operations within that trace - each LLM call, each tool call is a Run. Traces contain multiple Runs."
+
+### Q: How would you use LangSmith in production?
+**A:**
+- Set up **alerts** on error rate and P95 latency
+- Create **dashboards** for token costs
+- Use **Evaluators** to automatically score output quality
+- **Monitor** for prompt injection attempts in inputs
+- Track **cost per request** to optimize spending
+
+### Q: What does our app's trace structure look like?
+**A:**
+```
+LangGraph Trace (~87s)
+├── strategist_node     [12s]  → ChatOpenAI (search + outline)
+├── writer_node         [18s]  → ChatOpenAI (draft content)
+├── fact_checker_node   [15s]  → ChatOpenAI (verify claims)  ← PARALLEL
+├── editor_node         [8s]   → ChatOpenAI (polish)         ← PARALLEL
+└── merge_node          [5s]   → ChatOpenAI (combine)
+
+ChatOpenAI Trace (~35s) → humanize_content()
+ChatOpenAI Trace (~35s) → highlight_content()
+```
+
+### Q: What metrics have you observed?
+**A:** From our LangSmith dashboard:
+- **Total tokens**: 226K tokens for $0.12 (very cheap with GPT-4o-mini)
+- **P50 latency**: 33 seconds
+- **P99 latency**: 120 seconds
+- **Error rate**: 0%
+
+---
+
 ## KEY TALKING POINTS
 
 1. **LangGraph architecture** for parallel execution and explicit state management
@@ -473,4 +555,5 @@ while (true) {
 4. **Fact-checking** to combat hallucination with real-time search
 5. **Real-time progress** via SSE streaming with node-level updates
 6. **Grounded search** to reduce outdated information
-7. **Scalable design** ready for AWS deployment
+7. **LangSmith observability** for debugging, monitoring, and cost tracking
+8. **Scalable design** ready for AWS deployment
