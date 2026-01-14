@@ -17,15 +17,31 @@ export default function ResultsDisplay({ content, onNewSearch }: ResultsDisplayP
     .replace(/\n?```$/, '') // Remove closing ```
     .trim();
 
-  // Debug: Check if HTML spans are in content
-  useEffect(() => {
-    if (cleanedContent.includes('<span')) {
-      console.log('HTML spans found in content');
-      console.log('First 500 chars:', cleanedContent.substring(0, 500));
-    } else {
-      console.log('No HTML spans found in content');
-    }
-  }, [cleanedContent]);
+  // Check if content has HTML highlighting
+  const hasHTMLHighlighting = cleanedContent.includes('<span style="background-color:');
+
+  // If content has HTML highlighting, render it directly with dangerouslySetInnerHTML
+  // Convert markdown-like formatting to HTML
+  const renderRawHTML = () => {
+    let htmlContent = cleanedContent;
+
+    // Convert markdown headers to HTML
+    htmlContent = htmlContent.replace(/^### (.*?)$/gm, '<h3 style="font-size: 16px; font-weight: 400; margin-bottom: 10px; margin-top: 16px; color: #4a423a;">$1</h3>');
+    htmlContent = htmlContent.replace(/^## (.*?)$/gm, '<h2 style="font-size: 20px; font-weight: 400; margin-bottom: 12px; margin-top: 24px; color: #4a423a;">$1</h2>');
+    htmlContent = htmlContent.replace(/^# (.*?)$/gm, '<h1 style="font-size: 24px; font-weight: 400; margin-bottom: 16px; margin-top: 0; color: #4a423a;">$1</h1>');
+
+    // Convert markdown bold to HTML
+    htmlContent = htmlContent.replace(/\*\*(.*?)\*\*/g, '<strong style="font-weight: 600;">$1</strong>');
+
+    // Convert markdown italic to HTML
+    htmlContent = htmlContent.replace(/\*(.*?)\*/g, '<em style="font-style: italic;">$1</em>');
+
+    // Convert line breaks
+    htmlContent = htmlContent.replace(/\n\n/g, '</p><p style="margin-bottom: 12px; line-height: 1.8; text-align: justify;">');
+    htmlContent = '<p style="margin-bottom: 12px; line-height: 1.8; text-align: justify;">' + htmlContent + '</p>';
+
+    return htmlContent;
+  };
 
   const handleCopy = () => {
     navigator.clipboard.writeText(cleanedContent);
@@ -106,21 +122,36 @@ export default function ResultsDisplay({ content, onNewSearch }: ResultsDisplayP
             marginBottom: '24px',
           }}
         >
-          <div
-            style={{
-              fontSize: '14px',
-              lineHeight: '1.8',
-              color: colors.text,
-              wordWrap: 'break-word',
-              overflowWrap: 'break-word',
-              wordBreak: 'break-word',
-            }}
-          >
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              skipHtml={false}
-              allowHtml={true}
-              components={{
+          {hasHTMLHighlighting ? (
+            // Render HTML content directly with dangerouslySetInnerHTML
+            <div
+              style={{
+                fontSize: '14px',
+                lineHeight: '1.8',
+                color: colors.text,
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word',
+              }}
+              dangerouslySetInnerHTML={{ __html: renderRawHTML() }}
+            />
+          ) : (
+            // Render markdown content with ReactMarkdown
+            <div
+              style={{
+                fontSize: '14px',
+                lineHeight: '1.8',
+                color: colors.text,
+                wordWrap: 'break-word',
+                overflowWrap: 'break-word',
+                wordBreak: 'break-word',
+              }}
+            >
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                skipHtml={false}
+                allowHtml={true}
+                components={{
                 h1: ({ children }) => (
                   <h1 style={{ fontSize: '24px', fontWeight: 400, marginBottom: '16px', marginTop: '0', color: colors.text }}>
                     {children}
@@ -216,8 +247,9 @@ export default function ResultsDisplay({ content, onNewSearch }: ResultsDisplayP
               }}
             >
               {cleanedContent}
-            </ReactMarkdown>
-          </div>
+              </ReactMarkdown>
+            </div>
+          )}
         </div>
 
         {/* Action buttons */}
