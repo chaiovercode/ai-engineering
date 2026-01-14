@@ -206,6 +206,12 @@ Output the content with ==TEXT== markers around important passages that should b
                 _on_agent_complete,
             )
 
+            # Pre-start all agents to show initial states
+            for i, agent in enumerate(agents):
+                _on_agent_start(agent.role)
+                # Stagger agent start times for visual flow
+                time.sleep(0.3)
+
             # Create crew
             crew = Crew(
                 agents=agents,
@@ -215,6 +221,11 @@ Output the content with ==TEXT== markers around important passages that should b
 
             # Execute crew
             result = crew.kickoff()
+
+            # Mark all agents as complete in sequence
+            for i, agent in enumerate(agents):
+                _on_agent_complete(agent.role, str(result))
+                time.sleep(0.2)
 
             # Send status update that we're humanizing the output
             callback({
