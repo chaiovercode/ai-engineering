@@ -17,11 +17,16 @@ export default function InputSection({ onSubmit }: InputSectionProps) {
   const [input, setInput] = useState('');
   const [currentExample, setCurrentExample] = useState(0);
   const [mode, setMode] = useState<'gen-z' | 'analytical'>('analytical');
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentExample((prev) => (prev + 1) % examples.length);
-    }, 4000);
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -42,56 +47,70 @@ export default function InputSection({ onSubmit }: InputSectionProps) {
     <div
       style={{
         display: 'flex',
+        flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        height: 'calc(100vh - 80px)',
-        paddingLeft: '20px',
-        paddingRight: '20px',
+        minHeight: 'calc(100vh - 80px)',
+        padding: '40px 20px',
+        opacity: mounted ? 1 : 0.9,
+        transition: 'opacity 800ms ease-out',
       }}
     >
       <div
         style={{
           width: '100%',
-          maxWidth: '550px',
+          maxWidth: '480px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          textAlign: 'center',
         }}
       >
-        {/* Hero text */}
-        <div
+        {/* Spacer for breathing room */}
+        <div style={{ height: '40px' }} />
+
+        {/* Hero text - extremely minimal */}
+        <h1
           style={{
-            textAlign: 'center',
+            fontSize: '32px',
+            fontWeight: 300,
             marginBottom: '24px',
+            color: colors.text,
+            letterSpacing: '0px',
+            lineHeight: '1.2',
+            opacity: mounted ? 1 : 0.6,
+            transform: mounted ? 'translateY(0)' : 'translateY(10px)',
+            transition: 'all 800ms ease-out 100ms',
           }}
         >
-          <h1
-            style={{
-              fontSize: '26px',
-              fontWeight: 400,
-              marginBottom: '6px',
-              color: colors.text,
-              letterSpacing: '-0.3px',
-            }}
-          >
-            zensar research
-          </h1>
-          <p
-            style={{
-              fontSize: '11px',
-              color: colors.textLight,
-              fontWeight: 400,
-              marginBottom: '0',
-              lineHeight: '1.5',
-            }}
-          >
-            input a topic or url for ai-powered research writeups.
-          </p>
-        </div>
+          zensar research
+        </h1>
 
-        {/* Input form */}
-        <form onSubmit={handleSubmit}>
+        {/* Subtle description */}
+        <p
+          style={{
+            fontSize: '12px',
+            color: colors.textLight,
+            fontWeight: 300,
+            marginBottom: '64px',
+            lineHeight: '1.6',
+            opacity: mounted ? 0.7 : 0.3,
+            transition: 'opacity 800ms ease-out 200ms',
+            maxWidth: '280px',
+          }}
+        >
+          ask about anything. get thoughtful research.
+        </p>
+
+        {/* Input form - large and peaceful */}
+        <form onSubmit={handleSubmit} style={{ width: '100%' }}>
           <div
             style={{
               position: 'relative',
-              marginBottom: '12px',
+              marginBottom: '32px',
+              opacity: mounted ? 1 : 0.4,
+              transform: mounted ? 'scale(1)' : 'scale(0.95)',
+              transition: 'all 800ms ease-out 300ms',
             }}
           >
             <input
@@ -101,168 +120,115 @@ export default function InputSection({ onSubmit }: InputSectionProps) {
               placeholder={examples[currentExample]}
               style={{
                 width: '100%',
-                padding: '9px 12px',
-                fontSize: '13px',
+                padding: '16px 18px',
+                fontSize: '14px',
                 border: `1px solid ${colors.border}`,
                 backgroundColor: colors.cardBg,
-                borderRadius: '6px',
+                borderRadius: '8px',
                 fontFamily: 'inherit',
+                fontWeight: 300,
                 color: colors.text,
                 outline: 'none',
-                transition: 'all 200ms ease',
-                boxShadow: `0 0 0 0 transparent`,
+                transition: 'all 300ms ease',
+                boxShadow: 'none',
               }}
               onFocus={(e) => {
                 e.currentTarget.style.borderColor = colors.accent;
-                e.currentTarget.style.boxShadow = `0 0 0 2px rgba(160, 176, 154, 0.1)`;
+                e.currentTarget.style.backgroundColor = '#ffffff';
               }}
               onBlur={(e) => {
                 e.currentTarget.style.borderColor = colors.border;
-                e.currentTarget.style.boxShadow = `0 0 0 0 transparent`;
+                e.currentTarget.style.backgroundColor = colors.cardBg;
               }}
               autoFocus
             />
           </div>
 
-          {/* Z-shaped mode selector */}
+          {/* Mode selector - minimal buttons */}
           <div
             style={{
               display: 'flex',
+              gap: '12px',
               justifyContent: 'center',
-              marginBottom: '16px',
+              marginBottom: '32px',
+              opacity: mounted ? 0.6 : 0.3,
+              transition: 'opacity 800ms ease-out 400ms',
             }}
           >
-            <svg
-              width="120"
-              height="48"
-              viewBox="0 0 120 48"
+            <button
+              type="button"
+              onClick={() => setMode('analytical')}
               style={{
+                padding: '6px 12px',
+                fontSize: '10px',
+                fontWeight: 300,
+                backgroundColor: mode === 'analytical' ? colors.primary : 'transparent',
+                color: mode === 'analytical' ? '#ffffff' : colors.textLight,
+                border: `1px solid ${mode === 'analytical' ? colors.primary : colors.border}`,
+                borderRadius: '4px',
                 cursor: 'pointer',
+                fontFamily: 'inherit',
+                transition: 'all 300ms ease',
               }}
             >
-              {/* Analytical - top bar */}
-              <rect
-                x="8"
-                y="6"
-                width="50"
-                height="2"
-                fill={mode === 'analytical' ? colors.primary : colors.textMuted}
-                style={{
-                  transition: 'all 300ms ease',
-                }}
-              />
-              {/* Gen-z - bottom bar */}
-              <rect
-                x="62"
-                y="40"
-                width="50"
-                height="2"
-                fill={mode === 'gen-z' ? colors.primary : colors.textMuted}
-                style={{
-                  transition: 'all 300ms ease',
-                }}
-              />
-              {/* Diagonal slash - the interactive element */}
-              <line
-                x1="62"
-                y1="10"
-                x2="58"
-                y2="38"
-                stroke={colors.border}
-                strokeWidth="1.5"
-                style={{
-                  transition: 'stroke 300ms ease',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.stroke = colors.primary;
-                  e.currentTarget.style.strokeWidth = '2';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.stroke = colors.border;
-                  e.currentTarget.style.strokeWidth = '1.5';
-                }}
-              />
-              {/* Analytical label + clickable area */}
-              <g
-                onClick={() => setMode('analytical')}
-                style={{
-                  cursor: 'pointer',
-                }}
-              >
-                <text
-                  x="33"
-                  y="30"
-                  textAnchor="middle"
-                  fontSize="10"
-                  fontWeight="400"
-                  fill={mode === 'analytical' ? colors.primary : colors.textLight}
-                  style={{
-                    transition: 'all 300ms ease',
-                    userSelect: 'none',
-                    pointerEvents: 'none',
-                  }}
-                >
-                  analytical
-                </text>
-              </g>
-              {/* Gen-z label + clickable area */}
-              <g
-                onClick={() => setMode('gen-z')}
-                style={{
-                  cursor: 'pointer',
-                }}
-              >
-                <text
-                  x="87"
-                  y="30"
-                  textAnchor="middle"
-                  fontSize="10"
-                  fontWeight="400"
-                  fill={mode === 'gen-z' ? colors.primary : colors.textLight}
-                  style={{
-                    transition: 'all 300ms ease',
-                    userSelect: 'none',
-                    pointerEvents: 'none',
-                  }}
-                >
-                  gen-z
-                </text>
-              </g>
-            </svg>
+              analytical
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode('gen-z')}
+              style={{
+                padding: '6px 12px',
+                fontSize: '10px',
+                fontWeight: 300,
+                backgroundColor: mode === 'gen-z' ? colors.primary : 'transparent',
+                color: mode === 'gen-z' ? '#ffffff' : colors.textLight,
+                border: `1px solid ${mode === 'gen-z' ? colors.primary : colors.border}`,
+                borderRadius: '4px',
+                cursor: 'pointer',
+                fontFamily: 'inherit',
+                transition: 'all 300ms ease',
+              }}
+            >
+              gen-z
+            </button>
           </div>
 
+          {/* Submit button - minimal and subtle */}
           <button
             type="submit"
             disabled={!input.trim()}
             style={{
               width: '100%',
-              padding: '9px 16px',
+              padding: '12px 20px',
               fontSize: '12px',
-              fontWeight: 400,
-              backgroundColor: input.trim() ? colors.primary : colors.textMuted,
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '6px',
+              fontWeight: 300,
+              letterSpacing: '0.5px',
+              backgroundColor: input.trim() ? colors.primary : 'transparent',
+              color: input.trim() ? '#ffffff' : colors.textMuted,
+              border: `1px solid ${input.trim() ? colors.primary : colors.border}`,
+              borderRadius: '8px',
               cursor: input.trim() ? 'pointer' : 'not-allowed',
-              transition: 'all 200ms ease',
+              transition: 'all 400ms ease',
               opacity: input.trim() ? 1 : 0.5,
               fontFamily: 'inherit',
             }}
             onMouseEnter={(e) => {
               if (input.trim()) {
-                e.currentTarget.style.transform = 'translate(2px, 2px)';
-                e.currentTarget.style.boxShadow = 'none';
+                e.currentTarget.style.opacity = '0.9';
               }
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.transform = 'translate(0, 0)';
-              e.currentTarget.style.boxShadow = 'none';
+              if (input.trim()) {
+                e.currentTarget.style.opacity = '1';
+              }
             }}
           >
-            generate research
+            research
           </button>
         </form>
+
+        {/* Spacer for breathing room */}
+        <div style={{ height: '60px' }} />
       </div>
     </div>
   );
