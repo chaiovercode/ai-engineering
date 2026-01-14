@@ -27,7 +27,7 @@ export default function ChatPage() {
     // Load research from API
     const loadResearch = async () => {
       try {
-        const response = await fetch(`http://127.0.0.1:8000/api/research/${id}`);
+        const response = await fetch(`http://127.0.0.1:8008/api/research/${id}`);
         if (!response.ok) {
           throw new Error('Research not found');
         }

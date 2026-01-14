@@ -5,7 +5,7 @@ export async function streamResearch(
   callback: (event: any) => void
 ): Promise<void> {
   try {
-    const response = await fetch('http://127.0.0.1:8000/api/generate', {
+    const response = await fetch('http://127.0.0.1:8008/api/generate', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -52,7 +52,7 @@ export async function streamResearch(
 
 export async function fetchHistory(): Promise<{items: any[], total: number}> {
   try {
-    const response = await fetch('http://127.0.0.1:8000/api/history');
+    const response = await fetch('http://127.0.0.1:8008/api/history');
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -65,7 +65,7 @@ export async function fetchHistory(): Promise<{items: any[], total: number}> {
 
 export async function deleteResearch(id: string): Promise<boolean> {
   try {
-    const response = await fetch(`http://127.0.0.1:8000/api/research/${id}`, {
+    const response = await fetch(`http://127.0.0.1:8008/api/research/${id}`, {
       method: 'DELETE',
     });
     if (!response.ok) {

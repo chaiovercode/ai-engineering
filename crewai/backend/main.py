@@ -4,19 +4,19 @@ import os
 import queue
 import threading
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
+
+# Load environment variables FIRST before any other imports
+load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
 from fastapi import FastAPI, Request, Depends
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-from dotenv import load_dotenv
 
 from crew_service import CrewService
 from database import init_db, get_db
 from models import ResearchResult
-
-# Load environment variables
-load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
 # Initialize FastAPI
 app = FastAPI()
@@ -132,4 +132,4 @@ async def generate_research(request: Request):
 if __name__ == '__main__':
     import uvicorn
 
-    uvicorn.run(app, host='127.0.0.1', port=8000)
+    uvicorn.run(app, host='127.0.0.1', port=8008)
