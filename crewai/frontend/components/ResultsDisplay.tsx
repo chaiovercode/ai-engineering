@@ -25,7 +25,7 @@ export default function ResultsDisplay({ content, onNewSearch }: ResultsDisplayP
   const renderRawHTML = () => {
     let htmlContent = cleanedContent;
 
-    // Convert markdown headers to HTML
+    // First: Convert markdown headers to HTML (must be before paragraph wrapping)
     htmlContent = htmlContent.replace(/^### (.*?)$/gm, '<h3 style="font-size: 16px; font-weight: 400; margin-bottom: 10px; margin-top: 16px; color: #4a423a;">$1</h3>');
     htmlContent = htmlContent.replace(/^## (.*?)$/gm, '<h2 style="font-size: 20px; font-weight: 400; margin-bottom: 12px; margin-top: 24px; color: #4a423a;">$1</h2>');
     htmlContent = htmlContent.replace(/^# (.*?)$/gm, '<h1 style="font-size: 24px; font-weight: 400; margin-bottom: 16px; margin-top: 0; color: #4a423a;">$1</h1>');
@@ -36,11 +36,18 @@ export default function ResultsDisplay({ content, onNewSearch }: ResultsDisplayP
     // Convert markdown italic to HTML
     htmlContent = htmlContent.replace(/\*(.*?)\*/g, '<em style="font-style: italic;">$1</em>');
 
-    // Convert line breaks
-    htmlContent = htmlContent.replace(/\n\n/g, '</p><p style="margin-bottom: 12px; line-height: 1.8; text-align: justify;">');
-    htmlContent = '<p style="margin-bottom: 12px; line-height: 1.8; text-align: justify;">' + htmlContent + '</p>';
+    // Convert line breaks into proper HTML structure
+    // Split by double newlines to handle paragraphs
+    const paragraphs = htmlContent.split(/\n\n+/).map((p) => {
+      // Skip if this is a header
+      if (p.trim().startsWith('<h')) {
+        return p.trim();
+      }
+      // Wrap regular text in paragraph tags
+      return `<p style="margin-bottom: 12px; line-height: 1.8; text-align: justify;">${p.trim()}</p>`;
+    });
 
-    return htmlContent;
+    return paragraphs.join('');
   };
 
   const handleCopy = () => {
