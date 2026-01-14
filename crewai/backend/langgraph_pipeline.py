@@ -17,9 +17,8 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langgraph.graph import StateGraph, START, END
 from ddgs import DDGS
 
-# Initialize LLMs
+# Initialize LLM (gpt-4o-mini is faster AND cheaper than gpt-3.5-turbo)
 llm = ChatOpenAI(model="gpt-4o-mini")
-llm_fast = ChatOpenAI(model="gpt-3.5-turbo")
 
 # Search cache for faster repeated queries
 _search_cache = {}
@@ -252,7 +251,7 @@ def editor_node(state: ResearchState) -> dict:
         HumanMessage(content=f"{prompt}\n\nContent to edit:\n{draft}")
     ]
 
-    response = llm_fast.invoke(messages)
+    response = llm.invoke(messages)
     return {"edited": response.content}
 
 
@@ -267,7 +266,7 @@ def merge_node(state: ResearchState) -> dict:
         HumanMessage(content=f"Fact-checked version:\n{fact_checked}\n\n---\n\nEdited version:\n{edited}\n\nCreate a final merged version that combines accurate facts with polished writing.")
     ]
 
-    response = llm_fast.invoke(messages)
+    response = llm.invoke(messages)
     return {"final": response.content}
 
 

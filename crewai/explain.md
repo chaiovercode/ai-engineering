@@ -198,8 +198,8 @@ p99 = np.percentile(latencies, 99)
    - Fact Checker + Editor run in parallel via LangGraph
 
 2. **Faster Models**:
-   - Use GPT-4o-mini (current) instead of GPT-4
-   - Use GPT-3.5-turbo for simple tasks (editor, merge)
+   - Use GPT-4o-mini (current) - faster AND cheaper than GPT-3.5-turbo
+   - Consider Groq (Llama 3) or Claude Haiku for even faster responses
 
 3. **Caching**:
 ```python
@@ -431,10 +431,10 @@ while (true) {
 ### Q: How would you optimize costs?
 **A:**
 1. **LLM Costs** (biggest expense):
-   - Use GPT-4o-mini instead of GPT-4 (~10x cheaper)
-   - Use GPT-3.5-turbo for simple tasks (editor, merge)
+   - Use GPT-4o-mini instead of GPT-4 (~10x cheaper AND faster)
    - Cache repeated searches
    - Limit token output with max_tokens
+   - Combine multiple prompts into single calls where possible
 
 2. **Infrastructure Costs**:
    - Use Spot instances for non-critical workloads
@@ -443,10 +443,10 @@ while (true) {
 
 ### Q: How much would this cost to run?
 **A:** Rough estimates (1000 requests/day):
-- **OpenAI API**: ~$40-80/day (GPT-4o-mini + GPT-3.5-turbo mix)
+- **OpenAI API**: ~$30-60/day (GPT-4o-mini only)
 - **ECS Fargate**: ~$30-50/day (2 tasks)
 - **RDS**: ~$20-30/day (small instance)
-- **Total**: ~$90-160/day or ~$2700-4800/month
+- **Total**: ~$80-140/day or ~$2400-4200/month
 
 ---
 
@@ -457,7 +457,7 @@ while (true) {
 | Agents in pipeline | 4 |
 | Parallel agents | 2 (Fact Checker + Editor) |
 | Average latency | 35-45 seconds |
-| LLM models | GPT-4o-mini (main), GPT-3.5-turbo (editor/merge) |
+| LLM model | GPT-4o-mini (all nodes) |
 | Database | SQLite (dev), PostgreSQL (prod) |
 | Frontend framework | Next.js 14 |
 | Backend framework | FastAPI |
