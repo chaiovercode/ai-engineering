@@ -150,7 +150,8 @@ Output the content with ==TEXT== markers around important passages that should b
                         if state.get('running', False):
                             phases = agent_phases.get(agent_role, ['Processing...'])
                             phase_index = state.get('phase_index', 0)
-                            progress = min(state.get('progress', 10) + 15, 90)
+                            # Increment progress up to 95% (will reach 100% on completion)
+                            progress = min(state.get('progress', 10) + 15, 95)
 
                             # Send progress update
                             message = phases[min(phase_index, len(phases) - 1)]
@@ -185,7 +186,7 @@ Output the content with ==TEXT== markers around important passages that should b
                     'type': 'agent_progress',
                     'agent': agent_role,
                     'progress': 100,
-                    'message': 'Complete',
+                    'message': '',  # Empty message, status text will show "complete"
                 })
 
                 callback({
