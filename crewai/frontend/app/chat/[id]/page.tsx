@@ -100,6 +100,7 @@ export default function ChatPage() {
                       fontSize: '18px',
                       fontWeight: 400,
                       color: colors.text,
+                      marginLeft: '30px',
                     }}
                   >
                     {research.input}
@@ -116,6 +117,7 @@ export default function ChatPage() {
                       cursor: 'pointer',
                       fontFamily: 'inherit',
                       transition: 'all 200ms ease',
+                      marginRight: '30px',
                     }}
                     onMouseEnter={(e) => {
                       e.currentTarget.style.backgroundColor = colors.accent;
