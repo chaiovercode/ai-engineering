@@ -863,6 +863,559 @@ while (true) {
 
 ---
 
+## 10. LANGGRAPH INTERVIEW DEEP DIVE (TOUGH QUESTIONS)
+
+### Q: How does LangGraph know to run fact_checker and editor in parallel rather than sequentially?
+**A:** LangGraph's scheduler uses **dependency satisfaction**, not magic.
+
+When `writer` completes:
+- `fact_checker` dependencies: `{writer}` ✓ satisfied
+- `editor` dependencies: `{writer}` ✓ satisfied
+- Both are **eligible to run** → scheduler fires them concurrently
+
+This is **fan-out pattern** - one node with multiple outgoing edges to independent nodes.
+
+**What breaks parallelism:**
+```python
+# If you accidentally add this:
+graph.add_edge("fact_checker", "editor")
+
+# Now editor depends on BOTH writer AND fact_checker
+# Editor waits for fact_checker → sequential again
+```
+
+### Q: What's the difference between stream_mode="updates" vs "values" vs "debug"?
+**A:**
+
+| Mode | What it emits | Use case |
+|------|---------------|----------|
+| `"values"` | **Full state** after each node | Need complete picture at each step |
+| `"updates"` | **Only the delta** - what changed | Efficiency, just the new stuff |
+| `"debug"` | Everything - task starts/ends, state reads/writes | Debugging execution flow |
+
+**Our code uses `"updates"`:**
+```python
+async for event in research_graph.astream(initial_state, stream_mode="updates"):
+    for node_name, node_output in event.items():
+        # node_output is ONLY what that node returned
+        # e.g., {"fact_checked": "content..."} from fact_checker
+```
+
+If we used `"values"`:
+```python
+async for state in research_graph.astream(initial_state, stream_mode="values"):
+    # state is the ENTIRE state dict every time
+    # {"input": "...", "research": "...", "draft": "...", "fact_checked": "...", ...}
+```
+
+### Q: What is StateGraph actually doing with TypedDict? What happens if a node returns an unknown key?
+**A:**
+
+**TypedDict provides:**
+- Schema definition for state shape
+- IDE autocompletion
+- Static type checking (mypy/pyright)
+- **Channel definitions** - how state updates merge
+
+**Unknown keys are IGNORED or cause ERRORS:**
+```python
+def bad_node(state):
+    return {"unknown_key": "value"}  # LangGraph doesn't know what to do with this
+```
+
+**The deeper concept - Channels:**
+```python
+class ResearchState(TypedDict):
+    draft: str           # LastValue channel - overwrites
+    messages: Annotated[list, add_messages]  # Custom reducer - appends
+```
+
+Without `Annotated`, keys use **LastValue** semantics - new value replaces old.
+
+### Q: How does merge_node know to wait for BOTH fact_checker AND editor?
+**A:** LangGraph tracks dependencies through the graph structure:
+
+```python
+graph.add_edge("fact_checker", "merge")
+graph.add_edge("editor", "merge")
+```
+
+`merge` has **two incoming edges**. The scheduler tracks:
+
+```
+merge.dependencies = {fact_checker, editor}
+merge.satisfied = set()
+```
+
+When `editor` finishes (2s):
+```
+merge.satisfied = {editor}
+# {editor} != {fact_checker, editor} → NOT READY
+```
+
+When `fact_checker` finishes (10s):
+```
+merge.satisfied = {fact_checker, editor}
+# equals dependencies → READY, EXECUTE
+```
+
+**Key insight:** Editor's output sits in state for 8 seconds waiting. This is **fan-in** - multiple branches converging with a **synchronization barrier**.
+
+### Q: Why is polish_content outside the graph? Good or bad design?
+**A:**
+
+**What changes if you move it inside:**
+
+| Aspect | Outside (current) | Inside graph |
+|--------|-------------------|--------------|
+| **LangSmith traces** | 2 separate traces | 1 unified trace |
+| **Streaming events** | No agent_start/complete for polish | Would emit events like other nodes |
+| **Checkpointing** | Not checkpointed | Would be saved if persistence enabled |
+| **Error handling** | Separate try/catch in service | Unified graph error handling |
+| **State access** | Only gets final string | Could access full state history |
+
+**Current design tradeoff:**
+- ✅ Simple - single LLM call doesn't need graph overhead
+- ✅ Separation of concerns - graph = pipeline, service = formatting
+- ❌ Fragmented observability (2 traces)
+- ❌ If polish fails, graph already "completed" - no rollback
+
+**Senior answer:** "Kept it outside because it's a stateless transformation that doesn't benefit from graph features. The tradeoff is fragmented observability, which I'd reconsider if debugging post-processing becomes painful."
+
+### Q: What is checkpointing and how do you enable it?
+**A:** Checkpointing saves state snapshots at each step - like video game saves.
+
+**How to enable:**
+```python
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.sqlite import SqliteSaver
+
+# In-memory (dev)
+memory = MemorySaver()
+graph = build_research_graph().compile(checkpointer=memory)
+
+# SQLite (production)
+with SqliteSaver.from_conn_string("./checkpoints.db") as checkpointer:
+    graph = graph.compile(checkpointer=checkpointer)
+```
+
+**Run with thread_id:**
+```python
+config = {"configurable": {"thread_id": "user-123-session-456"}}
+result = graph.invoke(initial_state, config)
+```
+
+**Saved state per checkpoint:**
+```
+Thread: user-123-session-456
+├── checkpoint_0: {input: "AI trends", mode: "analytical", ...}
+├── checkpoint_1: {..., research: "Strategist output..."}
+├── checkpoint_2: {..., draft: "Writer output..."}
+└── checkpoint_3: {..., fact_checked: "...", edited: "..."}
+```
+
+**Production disaster scenario:**
+- User submits research. Pipeline runs 90s.
+- `fact_checker` and `editor` complete.
+- `merge_node` crashes - OpenAI rate limit.
+
+**Without checkpointing:** Everything lost. User waits another 90s.
+
+**With checkpointing:**
+```python
+# Same thread_id = resume from last checkpoint
+config = {"configurable": {"thread_id": "user-123-session-456"}}
+result = graph.invoke(None, config)  # None = continue from checkpoint
+# Resumes at merge_node, skips strategist/writer/fact_checker/editor
+# Done in 5 seconds instead of 90
+```
+
+### Q: What happens if DuckDuckGo is down? How does your code handle it?
+**A:**
+
+**Current code (VULNERABLE):**
+```python
+def duckduckgo_search(query: str) -> str:
+    try:
+        with DDGS() as ddgs:
+            results = list(ddgs.text(query, max_results=5))
+            # ...
+    except Exception as e:
+        return f"Could not search for '{query}': {str(e)}"
+```
+
+**When DuckDuckGo fails:**
+1. Exception caught
+2. Returns string: `"Could not search for 'AI trends': Connection timeout"`
+3. `fact_checker_node` receives this error string as "verification results"
+4. LLM tries to fact-check with **no actual verification data**
+5. Pipeline continues **silently degraded** - dangerous!
+
+**How it SHOULD handle it:**
+
+**Option 1: Retry with backoff**
+```python
+from tenacity import retry, stop_after_attempt, wait_exponential
+
+@retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=2, max=10))
+def duckduckgo_search(query: str) -> str:
+    # Let exception propagate on final failure
+```
+
+**Option 2: Fallback chain**
+```python
+def search_with_fallback(query: str) -> str:
+    for search_fn in [duckduckgo_search, tavily_search, serper_search]:
+        try:
+            result = search_fn(query)
+            if result and "Could not search" not in result:
+                return result
+        except Exception:
+            continue
+    return "VERIFICATION_UNAVAILABLE"  # Explicit signal
+```
+
+**Option 3: Explicit failure state**
+```python
+class ResearchState(TypedDict):
+    # ... existing fields ...
+    verification_failed: bool  # Add this
+
+def fact_checker_node(state):
+    search_result = duckduckgo_search(...)
+    if "Could not search" in search_result:
+        return {"fact_checked": state["draft"], "verification_failed": True}
+```
+Then surface to user: *"Note: Fact-checking was unavailable. Results unverified."*
+
+### Q: Why LangGraph instead of plain asyncio.gather?
+**A:** Your pipeline could be:
+```python
+research = await strategist(input)
+draft = await writer(research)
+fact_checked, edited = await asyncio.gather(fact_checker(draft), editor(draft))
+final = await merge(fact_checked, edited)
+```
+
+**What LangGraph provides that asyncio doesn't:**
+
+**1. Checkpointing (Resumability)**
+```python
+# asyncio - failure at merge = restart EVERYTHING
+# LangGraph - resume from checkpoint in 5s, not 90s
+result = graph.invoke(None, {"configurable": {"thread_id": "abc"}})
+```
+
+**2. Observability out of the box**
+```python
+# asyncio - you get nothing. Which function is slow? 🤷
+# LangGraph - automatic tracing to LangSmith. Zero extra code.
+```
+
+**3. Structured streaming events**
+```python
+# asyncio - build it yourself for every step
+# LangGraph:
+async for event in graph.astream_events(state, version="v2"):
+    # event["event"] = "on_chain_start" | "on_chain_end"
+    # Automatic for every node
+```
+
+**4. Conditional routing**
+```python
+# asyncio - ugly if/else chains
+# LangGraph - declarative
+def route(state):
+    return "fact_checker" if state["needs_verification"] else "editor"
+graph.add_conditional_edges("writer", route, ["fact_checker", "editor"])
+```
+
+**5. Human-in-the-loop**
+```python
+# asyncio - messy. How do you pause and resume?
+# LangGraph:
+graph.add_node("human_review", interrupt_before=True)
+# Pauses, saves state, waits for human, resumes
+```
+
+**Senior interview answer:**
+> "asyncio.gather handles parallel execution, but LangGraph gives me infrastructure I'd build myself: checkpointing for resumability, automatic observability via LangSmith, structured streaming events, declarative conditional routing, and human-in-the-loop patterns. For a simple script, asyncio is fine. For a production pipeline that needs monitoring, recovery, and debugging - LangGraph pays for itself."
+
+---
+
+## 11. LANGSMITH INTERVIEW DEEP DIVE (TOUGH QUESTIONS)
+
+### Q: How does LangSmith trace your code without you writing any tracing code?
+**A:** **Automatic instrumentation via monkey-patching**.
+
+When you import LangChain/LangGraph:
+1. Library checks for `LANGCHAIN_TRACING_V2=true` environment variable
+2. If set, it **wraps every LLM call, tool call, and chain invocation**
+3. Each wrapped function sends telemetry to LangSmith API
+
+```python
+# This simple code...
+llm = ChatOpenAI(model="gpt-4o-mini")
+response = llm.invoke("Hello")
+
+# ...under the hood becomes (simplified):
+def traced_invoke(prompt):
+    start_time = time.time()
+    run_id = uuid4()
+    langsmith_client.create_run(id=run_id, inputs={"prompt": prompt})
+    try:
+        result = original_invoke(prompt)
+        langsmith_client.update_run(run_id, outputs={"response": result})
+        return result
+    except Exception as e:
+        langsmith_client.update_run(run_id, error=str(e))
+        raise
+    finally:
+        langsmith_client.update_run(run_id, latency=time.time() - start_time)
+```
+
+**Zero code changes required** - just environment variables.
+
+### Q: Explain the difference between a Trace, Run, and Span.
+**A:**
+
+| Term | Definition | In our app |
+|------|------------|------------|
+| **Trace** | Root-level execution tree | One research request |
+| **Run** | Any operation in the trace | A node execution |
+| **Span** | Nested run within a run | LLM call inside a node |
+
+**Hierarchy example:**
+```
+Trace: research-request-abc
+├── Run: strategist_node (15s)
+│   ├── Span: DuckDuckGo search (2s)
+│   └── Span: ChatOpenAI call (12s)
+├── Run: writer_node (20s)
+│   └── Span: ChatOpenAI call (20s)
+├── Run: fact_checker_node (18s)  ← PARALLEL
+│   ├── Span: ChatOpenAI (extract claims)
+│   ├── Span: DuckDuckGo search
+│   └── Span: ChatOpenAI (verify)
+├── Run: editor_node (12s)        ← PARALLEL
+│   └── Span: ChatOpenAI call
+└── Run: merge_node (8s)
+    └── Span: ChatOpenAI call
+```
+
+**Why this matters:** When debugging, you drill down:
+1. Find slow trace
+2. Expand to find slow run
+3. Expand to find slow span
+4. That's your bottleneck
+
+### Q: Why do we see 2 traces per request in LangSmith?
+**A:** Because `polish_content` runs **outside** the LangGraph.
+
+```python
+# In research_service.py:
+result = run_research(input_text, mode, callback)  # Trace 1: LangGraph
+final_content = self.polish_content(str(result))   # Trace 2: ChatOpenAI
+```
+
+The LangGraph trace covers the pipeline (strategist → writer → fact_checker/editor → merge).
+The ChatOpenAI trace is a standalone LLM call.
+
+**Tradeoff:** Fragmented observability. Could fix by adding polish as a graph node.
+
+### Q: What's the difference between P50 and P99 latency? Which matters more?
+**A:**
+
+| Metric | Definition | Our value |
+|--------|------------|-----------|
+| **P50** | 50% of requests are faster than this | 33s |
+| **P99** | 99% of requests are faster than this | 120s |
+
+**P50 (median)** - Typical user experience.
+**P99** - Worst-case experience (1 in 100 users).
+
+**Which matters:**
+- **P50** for typical performance
+- **P99** for SLA guarantees and tail latency
+
+**Our P99 of 120s is concerning** - 1 in 100 users waits 2 full minutes. Causes:
+- OpenAI API variance
+- DuckDuckGo rate limiting
+- Network hiccups
+
+**How to fix high P99:**
+- Timeouts with fallbacks
+- Retry logic with circuit breakers
+- Caching for repeated queries
+- Consider faster providers (Groq, Cerebras)
+
+### Q: How would you debug a slow request using LangSmith?
+**A:**
+
+**Step-by-step workflow:**
+
+1. **Filter by latency** - Sort traces by latency descending
+2. **Click slowest trace** - Opens detailed view
+3. **Expand tree** - See all runs/spans with timing
+4. **Identify bottleneck** - Which node/span took longest?
+5. **Analyze inputs/outputs** - Was the prompt too long? Bad response?
+6. **Check for patterns** - Same node always slow? Specific query types?
+
+**Example investigation:**
+```
+Trace: 145s total (way over P99)
+
+├── strategist: 15s ✓
+├── writer: 25s ⚠️ (usually 20s)
+├── fact_checker: 65s ❌ (usually 18s)
+│   ├── extract_claims: 10s
+│   ├── duckduckgo_search: 45s ❌ (BOTTLENECK!)
+│   └── verify: 10s
+├── editor: 12s ✓
+└── merge: 8s ✓
+```
+
+**Root cause:** DuckDuckGo search took 45s (rate limited or network issue).
+**Fix:** Add timeout + fallback search provider.
+
+### Q: How would you use LangSmith Evaluators to catch hallucinations?
+**A:**
+
+```python
+from langsmith import Client
+from langsmith.evaluation import evaluate
+
+client = Client()
+
+# Create test dataset
+dataset = client.create_dataset("hallucination-test")
+client.create_examples(
+    inputs=[
+        {"topic": "Virat Kohli cricket stats"},
+        {"topic": "Apple company founding date"},
+    ],
+    outputs=[
+        {"must_contain": ["50 centuries", "100 centuries"]},  # Range check
+        {"must_not_contain": ["1978", "1980"]},  # Wrong dates to reject
+    ],
+    dataset_id=dataset.id,
+)
+
+# Define evaluator
+def fact_accuracy_evaluator(run, example):
+    output = run.outputs["content"]
+
+    # Check must_contain
+    for fact in example.outputs.get("must_contain", []):
+        if fact not in output:
+            return {"score": 0, "reason": f"Missing fact: {fact}"}
+
+    # Check must_not_contain
+    for bad_fact in example.outputs.get("must_not_contain", []):
+        if bad_fact in output:
+            return {"score": 0, "reason": f"Contains wrong fact: {bad_fact}"}
+
+    return {"score": 1}
+
+# Run evaluation
+results = evaluate(
+    my_research_pipeline,
+    data="hallucination-test",
+    evaluators=[fact_accuracy_evaluator],
+)
+```
+
+**In production:**
+- Run evaluators on 5% of traffic (sampled)
+- Alert if accuracy drops below threshold
+- Weekly evaluation runs on curated test set
+
+### Q: What data is LangSmith collecting about my application?
+**A:**
+
+**Per-request:**
+- Full input prompts
+- Full output responses
+- Latency (ms)
+- Token counts (input/output)
+- Calculated cost
+- Model name and parameters
+- Error stack traces (if failed)
+- Custom metadata you add
+
+**Aggregated:**
+- P50/P95/P99 latency over time
+- Error rate trends
+- Token usage per day
+- Cost per day
+- Request volume
+
+**Security considerations:**
+- LangSmith sees ALL your prompts and responses
+- PII in prompts is visible in LangSmith UI
+- Consider: on-prem LangSmith for sensitive data
+- Or: filter PII before sending to LangSmith
+
+### Q: How would you set up alerting with LangSmith?
+**A:**
+
+**Built-in alerts (LangSmith Pro):**
+```
+Rule: P99 latency > 120s for 5 minutes → Slack alert
+Rule: Error rate > 5% for 10 minutes → PagerDuty
+Rule: Daily cost > $100 → Email
+```
+
+**Custom alerting (via API):**
+```python
+from langsmith import Client
+
+client = Client()
+
+# Query recent runs
+runs = client.list_runs(
+    project_name="research-prod",
+    start_time=datetime.now() - timedelta(hours=1),
+)
+
+# Calculate metrics
+latencies = [r.latency for r in runs if r.latency]
+p99 = np.percentile(latencies, 99)
+
+errors = [r for r in runs if r.error]
+error_rate = len(errors) / len(runs)
+
+# Alert logic
+if p99 > 120:
+    send_slack_alert(f"P99 latency spike: {p99}s")
+if error_rate > 0.05:
+    send_pagerduty(f"Error rate: {error_rate*100}%")
+```
+
+### Q: What's the cost of using LangSmith?
+**A:**
+
+**Pricing tiers:**
+- **Free**: 5K traces/month, 14-day retention
+- **Plus** ($39/mo): 50K traces, 90-day retention
+- **Enterprise**: Unlimited, SOC2, on-prem option
+
+**For our app:**
+- 31 traces = free tier is fine for dev
+- Production at 1000 requests/day = Plus tier needed
+
+**Hidden costs:**
+- Traces add ~50-100ms latency (telemetry HTTP calls)
+- Bandwidth to LangSmith servers
+- Storage if self-hosting
+
+**When to NOT use LangSmith:**
+- Ultra-low latency requirements
+- Air-gapped environments
+- Regulatory restrictions on data leaving network
+
+---
+
 ## QUICK REFERENCE - Key Numbers
 
 | Metric | Value |
