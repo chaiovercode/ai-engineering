@@ -124,72 +124,112 @@ export default function InputSection({ onSubmit }: InputSectionProps) {
             />
           </div>
 
-          {/* Mode selector */}
+          {/* Z-shaped mode selector */}
           <div
             style={{
               display: 'flex',
-              gap: '10px',
-              marginBottom: '12px',
+              justifyContent: 'center',
+              marginBottom: '16px',
             }}
           >
-            <button
-              type="button"
-              onClick={() => setMode('analytical')}
+            <svg
+              width="120"
+              height="48"
+              viewBox="0 0 120 48"
               style={{
-                flex: 1,
-                padding: '8px 12px',
-                fontSize: '11px',
-                fontWeight: 400,
-                backgroundColor: mode === 'analytical' ? colors.primary : colors.cardBg,
-                color: mode === 'analytical' ? '#ffffff' : colors.text,
-                border: `1px solid ${mode === 'analytical' ? colors.primary : colors.border}`,
-                borderRadius: '6px',
                 cursor: 'pointer',
-                fontFamily: 'inherit',
-                transition: 'all 200ms ease',
-              }}
-              onMouseEnter={(e) => {
-                if (mode !== 'analytical') {
-                  e.currentTarget.style.borderColor = colors.primary;
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (mode !== 'analytical') {
-                  e.currentTarget.style.borderColor = colors.border;
-                }
               }}
             >
-              analytical
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode('gen-z')}
-              style={{
-                flex: 1,
-                padding: '8px 12px',
-                fontSize: '11px',
-                fontWeight: 400,
-                backgroundColor: mode === 'gen-z' ? colors.primary : colors.cardBg,
-                color: mode === 'gen-z' ? '#ffffff' : colors.text,
-                border: `1px solid ${mode === 'gen-z' ? colors.primary : colors.border}`,
-                borderRadius: '6px',
-                cursor: 'pointer',
-                fontFamily: 'inherit',
-                transition: 'all 200ms ease',
-              }}
-              onMouseEnter={(e) => {
-                if (mode !== 'gen-z') {
-                  e.currentTarget.style.borderColor = colors.primary;
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (mode !== 'gen-z') {
-                  e.currentTarget.style.borderColor = colors.border;
-                }
-              }}
-            >
-              gen-z
-            </button>
+              {/* Analytical - top bar */}
+              <rect
+                x="8"
+                y="6"
+                width="50"
+                height="2"
+                fill={mode === 'analytical' ? colors.primary : colors.textMuted}
+                style={{
+                  transition: 'all 300ms ease',
+                }}
+              />
+              {/* Gen-z - bottom bar */}
+              <rect
+                x="62"
+                y="40"
+                width="50"
+                height="2"
+                fill={mode === 'gen-z' ? colors.primary : colors.textMuted}
+                style={{
+                  transition: 'all 300ms ease',
+                }}
+              />
+              {/* Diagonal slash - the interactive element */}
+              <line
+                x1="62"
+                y1="10"
+                x2="58"
+                y2="38"
+                stroke={colors.border}
+                strokeWidth="1.5"
+                style={{
+                  transition: 'stroke 300ms ease',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.stroke = colors.primary;
+                  e.currentTarget.style.strokeWidth = '2';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.stroke = colors.border;
+                  e.currentTarget.style.strokeWidth = '1.5';
+                }}
+              />
+              {/* Analytical label + clickable area */}
+              <g
+                onClick={() => setMode('analytical')}
+                style={{
+                  cursor: 'pointer',
+                }}
+              >
+                <text
+                  x="33"
+                  y="30"
+                  textAnchor="middle"
+                  fontSize="10"
+                  fontWeight="400"
+                  fill={mode === 'analytical' ? colors.primary : colors.textLight}
+                  style={{
+                    transition: 'all 300ms ease',
+                    userSelect: 'none',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  analytical
+                </text>
+              </g>
+              {/* Gen-z label + clickable area */}
+              <g
+                onClick={() => setMode('gen-z')}
+                style={{
+                  cursor: 'pointer',
+                }}
+              >
+                <text
+                  x="87"
+                  y="30"
+                  textAnchor="middle"
+                  fontSize="10"
+                  fontWeight="400"
+                  fill={mode === 'gen-z' ? colors.primary : colors.textLight}
+                  style={{
+                    transition: 'all 300ms ease',
+                    userSelect: 'none',
+                    pointerEvents: 'none',
+                  }}
+                >
+                  gen-z
+                </text>
+              </g>
+            </svg>
           </div>
 
           <button

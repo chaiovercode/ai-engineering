@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { colors } from '@/lib/colors';
@@ -15,6 +16,16 @@ export default function ResultsDisplay({ content, onNewSearch }: ResultsDisplayP
     .replace(/^```markdown\n?/i, '') // Remove opening ```markdown
     .replace(/\n?```$/, '') // Remove closing ```
     .trim();
+
+  // Debug: Check if HTML spans are in content
+  useEffect(() => {
+    if (cleanedContent.includes('<span')) {
+      console.log('HTML spans found in content');
+      console.log('First 500 chars:', cleanedContent.substring(0, 500));
+    } else {
+      console.log('No HTML spans found in content');
+    }
+  }, [cleanedContent]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(cleanedContent);
