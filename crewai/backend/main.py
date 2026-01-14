@@ -5,12 +5,15 @@ import queue
 import threading
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
 from dotenv import load_dotenv
 
 from crew_service import CrewService
+from database import init_db, get_db
+from models import ResearchResult
 
 # Load environment variables
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
@@ -29,6 +32,47 @@ app.add_middleware(
 
 # Initialize crew service
 crew_service = CrewService()
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database on startup"""
+    init_db()
+
+
+@app.get('/api/history')
+async def get_history(limit: int = 50, db: Session = Depends(get_db)):
+    """Get research history"""
+    results = db.query(ResearchResult)\
+        .order_by(ResearchResult.created_at.desc())\
+        .limit(limit)\
+        .all()
+
+    return {
+        'items': [r.to_dict() for r in results],
+        'total': db.query(ResearchResult).count()
+    }
+
+
+@app.get('/api/research/{id}')
+async def get_research(id: str, db: Session = Depends(get_db)):
+    """Get single research by ID"""
+    research = db.query(ResearchResult).filter(ResearchResult.id == id).first()
+    if not research:
+        return {'error': 'Research not found'}, 404
+    return research.to_dict()
+
+
+@app.delete('/api/research/{id}')
+async def delete_research(id: str, db: Session = Depends(get_db)):
+    """Delete research by ID"""
+    research = db.query(ResearchResult).filter(ResearchResult.id == id).first()
+    if not research:
+        return {'error': 'Research not found'}, 404
+
+    db.delete(research)
+    db.commit()
+    return {'success': True}
 
 
 @app.post('/api/generate')

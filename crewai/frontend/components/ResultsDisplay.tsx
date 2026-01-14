@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { colors } from '@/lib/colors';
@@ -26,9 +26,10 @@ export default function ResultsDisplay({ content, onNewSearch }: ResultsDisplayP
     let htmlContent = cleanedContent;
 
     // First: Convert markdown headers to HTML (must be before paragraph wrapping)
-    htmlContent = htmlContent.replace(/^### (.*?)$/gm, '<h3 style="font-size: 16px; font-weight: 400; margin-bottom: 10px; margin-top: 16px; color: #4a423a;">$1</h3>');
-    htmlContent = htmlContent.replace(/^## (.*?)$/gm, '<h2 style="font-size: 20px; font-weight: 400; margin-bottom: 12px; margin-top: 24px; color: #4a423a;">$1</h2>');
-    htmlContent = htmlContent.replace(/^# (.*?)$/gm, '<h1 style="font-size: 24px; font-weight: 400; margin-bottom: 16px; margin-top: 0; color: #4a423a;">$1</h1>');
+    // Use multiline replacement with proper markers
+    htmlContent = htmlContent.replace(/^### (.*?)$/gm, '\n<h3 style="font-size: 16px; font-weight: 400; margin-bottom: 10px; margin-top: 16px; color: #4a423a;">$1</h3>\n');
+    htmlContent = htmlContent.replace(/^## (.*?)$/gm, '\n<h2 style="font-size: 20px; font-weight: 400; margin-bottom: 12px; margin-top: 24px; color: #4a423a;">$1</h2>\n');
+    htmlContent = htmlContent.replace(/^# (.*?)$/gm, '\n<h1 style="font-size: 24px; font-weight: 400; margin-bottom: 16px; margin-top: 0; color: #4a423a;">$1</h1>\n');
 
     // Convert markdown bold to HTML
     htmlContent = htmlContent.replace(/\*\*(.*?)\*\*/g, '<strong style="font-weight: 600;">$1</strong>');
@@ -36,18 +37,41 @@ export default function ResultsDisplay({ content, onNewSearch }: ResultsDisplayP
     // Convert markdown italic to HTML
     htmlContent = htmlContent.replace(/\*(.*?)\*/g, '<em style="font-style: italic;">$1</em>');
 
-    // Convert line breaks into proper HTML structure
-    // Split by double newlines to handle paragraphs
-    const paragraphs = htmlContent.split(/\n\n+/).map((p) => {
-      // Skip if this is a header
-      if (p.trim().startsWith('<h')) {
-        return p.trim();
-      }
-      // Wrap regular text in paragraph tags
-      return `<p style="margin-bottom: 12px; line-height: 1.8; text-align: justify;">${p.trim()}</p>`;
-    });
+    // Process line by line instead of paragraph by paragraph
+    const lines = htmlContent.split('\n');
+    const result: string[] = [];
+    let currentParagraph: string[] = [];
 
-    return paragraphs.join('');
+    for (const line of lines) {
+      const trimmed = line.trim();
+
+      // If it's a header or empty, flush current paragraph and add the line
+      if (trimmed.startsWith('<h') || trimmed === '') {
+        if (currentParagraph.length > 0) {
+          const paragraphText = currentParagraph.join(' ').trim();
+          if (paragraphText && !paragraphText.startsWith('<')) {
+            result.push(`<p style="margin-bottom: 12px; line-height: 1.8; text-align: justify;">${paragraphText}</p>`);
+          }
+          currentParagraph = [];
+        }
+        if (trimmed) {
+          result.push(trimmed);
+        }
+      } else if (trimmed) {
+        // Add to current paragraph
+        currentParagraph.push(trimmed);
+      }
+    }
+
+    // Flush remaining paragraph
+    if (currentParagraph.length > 0) {
+      const paragraphText = currentParagraph.join(' ').trim();
+      if (paragraphText && !paragraphText.startsWith('<')) {
+        result.push(`<p style="margin-bottom: 12px; line-height: 1.8; text-align: justify;">${paragraphText}</p>`);
+      }
+    }
+
+    return result.join('');
   };
 
   const handleCopy = () => {
@@ -85,134 +109,18 @@ export default function ResultsDisplay({ content, onNewSearch }: ResultsDisplayP
             marginBottom: '24px',
           }}
         >
-          {hasHTMLHighlighting ? (
-            // Render HTML content directly with dangerouslySetInnerHTML
-            <div
-              style={{
-                fontSize: '14px',
-                lineHeight: '1.8',
-                color: colors.text,
-                wordWrap: 'break-word',
-                overflowWrap: 'break-word',
-                wordBreak: 'break-word',
-              }}
-              dangerouslySetInnerHTML={{ __html: renderRawHTML() }}
-            />
-          ) : (
-            // Render markdown content with ReactMarkdown
-            <div
-              style={{
-                fontSize: '14px',
-                lineHeight: '1.8',
-                color: colors.text,
-                wordWrap: 'break-word',
-                overflowWrap: 'break-word',
-                wordBreak: 'break-word',
-              }}
-            >
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                skipHtml={false}
-                allowHtml={true}
-                components={{
-                h1: ({ children }) => (
-                  <h1 style={{ fontSize: '24px', fontWeight: 400, marginBottom: '16px', marginTop: '0', color: colors.text }}>
-                    {children}
-                  </h1>
-                ),
-                h2: ({ children }) => (
-                  <h2 style={{ fontSize: '20px', fontWeight: 400, marginBottom: '12px', marginTop: '24px', color: colors.text }}>
-                    {children}
-                  </h2>
-                ),
-                h3: ({ children }) => (
-                  <h3 style={{ fontSize: '16px', fontWeight: 400, marginBottom: '10px', marginTop: '16px', color: colors.text }}>
-                    {children}
-                  </h3>
-                ),
-                h4: ({ children }) => (
-                  <h4 style={{ fontSize: '14px', fontWeight: 400, marginBottom: '8px', marginTop: '12px', color: colors.text }}>
-                    {children}
-                  </h4>
-                ),
-                p: ({ children, node }) => {
-                  // Check if paragraph contains HTML (highlight spans)
-                  const hasHtml = node?.children?.some((child: any) => child.type === 'html');
-
-                  if (hasHtml) {
-                    // Render HTML content with dangerouslySetInnerHTML
-                    const htmlContent = node?.children
-                      ?.map((child: any) => {
-                        if (child.type === 'html') return child.value;
-                        if (child.type === 'text') return child.value;
-                        return '';
-                      })
-                      .join('') || '';
-
-                    return (
-                      <p
-                        style={{ marginBottom: '12px', lineHeight: '1.8', textAlign: 'justify' }}
-                        dangerouslySetInnerHTML={{ __html: htmlContent }}
-                      />
-                    );
-                  }
-
-                  return (
-                    <p style={{ marginBottom: '12px', lineHeight: '1.8', textAlign: 'justify' }}>
-                      {children}
-                    </p>
-                  );
-                },
-                ul: ({ children }) => (
-                  <ul style={{ marginBottom: '12px', paddingLeft: '20px', listStyle: 'none' }}>
-                    {children}
-                  </ul>
-                ),
-                ol: ({ children }) => (
-                  <ol style={{ marginBottom: '12px', paddingLeft: '20px', listStyle: 'decimal' }}>
-                    {children}
-                  </ol>
-                ),
-                li: ({ children }) => (
-                  <li style={{ marginBottom: '6px', paddingLeft: '4px' }}>
-                    {children}
-                  </li>
-                ),
-                strong: ({ children }) => (
-                  <strong style={{ fontWeight: 600 }}>
-                    {children}
-                  </strong>
-                ),
-                em: ({ children }) => (
-                  <em style={{ fontStyle: 'italic' }}>
-                    {children}
-                  </em>
-                ),
-                code: ({ children }) => (
-                  <code style={{ backgroundColor: colors.surface, padding: '2px 6px', borderRadius: '4px', fontSize: '13px' }}>
-                    {children}
-                  </code>
-                ),
-                pre: ({ children }) => (
-                  <pre style={{ backgroundColor: colors.surface, padding: '12px', borderRadius: '6px', overflow: 'auto', marginBottom: '12px', fontSize: '12px' }}>
-                    {children}
-                  </pre>
-                ),
-                blockquote: ({ children }) => (
-                  <blockquote style={{ borderLeft: `3px solid ${colors.accent}`, paddingLeft: '12px', marginLeft: '0', marginBottom: '12px', color: colors.textLight, fontStyle: 'italic' }}>
-                    {children}
-                  </blockquote>
-                ),
-                html: ({ value }) => {
-                  // Handle inline HTML like <span> tags for highlighting
-                  return <span dangerouslySetInnerHTML={{ __html: value }} style={{ display: 'inline' }} />;
-                },
-              }}
-            >
-              {cleanedContent}
-              </ReactMarkdown>
-            </div>
-          )}
+          {/* Always render as HTML to ensure headers display correctly */}
+          <div
+            style={{
+              fontSize: '14px',
+              lineHeight: '1.8',
+              color: colors.text,
+              wordWrap: 'break-word',
+              overflowWrap: 'break-word',
+              wordBreak: 'break-word',
+            }}
+            dangerouslySetInnerHTML={{ __html: renderRawHTML() }}
+          />
         </div>
 
         {/* Navigation and Action buttons */}

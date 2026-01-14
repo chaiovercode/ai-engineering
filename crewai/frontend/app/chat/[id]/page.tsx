@@ -3,6 +3,7 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { colors } from '@/lib/colors';
+import { fetchHistory } from '@/lib/api';
 import ResultsDisplay from '@/components/ResultsDisplay';
 import ResearchSidebar from '@/components/ResearchSidebar';
 
@@ -23,51 +24,34 @@ export default function ChatPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load research from localStorage
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('researchHistory');
-      if (saved) {
-        try {
-          const history: ResearchItem[] = JSON.parse(saved);
-          const found = history.find((item) => item.id === id);
-          if (found) {
-            setResearch(found);
-            setLoading(false);
-          } else {
-            // Research was deleted, redirect to home after brief delay
-            setTimeout(() => {
-              router.push('/');
-            }, 300);
-          }
-        } catch (err) {
-          console.error('Failed to load research:', err);
-          setLoading(false);
+    // Load research from API
+    const loadResearch = async () => {
+      try {
+        const response = await fetch(`http://127.0.0.1:8000/api/research/${id}`);
+        if (!response.ok) {
+          throw new Error('Research not found');
         }
-      } else {
-        // No history exists, redirect to home after brief delay
+        const data = await response.json();
+        setResearch(data);
+        setLoading(false);
+      } catch (err) {
+        console.error('Failed to load research:', err);
+        // Research not found, redirect to home
         setTimeout(() => {
           router.push('/');
         }, 300);
       }
+    };
+
+    if (id) {
+      loadResearch();
     }
   }, [id, router]);
 
   const handleShowHistory = (content: string) => {
-    // Find and navigate to that research
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('researchHistory');
-      if (saved) {
-        try {
-          const history: ResearchItem[] = JSON.parse(saved);
-          const found = history.find((item) => item.content === content);
-          if (found) {
-            router.push(`/chat/${found.id}`);
-          }
-        } catch (err) {
-          console.error('Failed to load research:', err);
-        }
-      }
-    }
+    // This is called when user clicks on a research item from sidebar
+    // The sidebar will navigate directly, so we don't need to do anything here
+    // The useEffect above will fetch the new research based on the URL param
   };
 
   return (

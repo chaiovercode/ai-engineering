@@ -25,13 +25,13 @@ def get_research_tasks(topic: str, mode: str, on_start, on_progress, on_complete
         research_desc = f"""Research the topic: "{topic}"
 
         Your task is to:
-        1. ALWAYS do web searches to find the latest information (not old news)
-        2. Focus on recent articles, news, and updates from this week/month
-        3. Find what's trending RIGHT NOW and what's actually relevant today
+        1. Focus on what's CURRENT in 2026 - we are now in January 2026
+        2. Find recent articles, news, and updates from 2025-2026
+        3. Identify what's trending RIGHT NOW in 2026, not old stuff from 2023
         4. Look for good sources (but keep it real)
-        5. Put together a vibe check outline with what matters
+        5. Put together a vibe check outline with what matters TODAY
 
-        IMPORTANT: You MUST search the web for current info. Do NOT rely on outdated knowledge.
+        IMPORTANT: Avoid outdated information from 2023 or earlier. Focus on recent 2025-2026 developments.
         Find recent, actually useful info that slaps. No cap."""
         research_output = """A research outline that includes:
         - What people are actually talking about
@@ -101,14 +101,14 @@ def get_research_tasks(topic: str, mode: str, on_start, on_progress, on_complete
         research_desc = f"""Conduct comprehensive research on: "{topic}"
 
         Your task is to:
-        1. ALWAYS conduct web searches to gather the most current, authoritative information
-        2. Focus exclusively on recent sources (this week/month) to avoid outdated information
-        3. Identify significant trends, patterns, and relationships from today's sources
-        4. Locate latest peer-reviewed sources and current expert commentary
-        5. Develop a structured, evidence-based research outline grounded in current data
+        1. Focus exclusively on CURRENT 2026 information - we are in January 2026
+        2. Identify recent trends, partnerships, announcements, and developments from 2025-2026
+        3. Avoid outdated information from 2023 - focus on RECENT 2025-2026 trends instead
+        4. Locate latest expert commentary and recent market analysis from 2025-2026
+        5. Develop a structured, evidence-based research outline grounded in CURRENT 2026 data
 
-        CRITICAL: You MUST search the web for the latest information. Do NOT use outdated knowledge or information from your training data.
-        Focus on recent, rigorous information that establishes a strong foundation for analysis."""
+        CRITICAL: It is now 2026. Do NOT cite 2023 information. Focus ONLY on recent 2025-2026 developments.
+        Provide current market intelligence and recent company announcements that are relevant today."""
         research_output = """A detailed research outline with:
         - Key concepts and their interrelationships
         - Documented trends and their implications

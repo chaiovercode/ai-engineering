@@ -49,3 +49,31 @@ export async function streamResearch(
     });
   }
 }
+
+export async function fetchHistory(): Promise<{items: any[], total: number}> {
+  try {
+    const response = await fetch('http://127.0.0.1:8000/api/history');
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error('Failed to fetch history:', error);
+    return { items: [], total: 0 };
+  }
+}
+
+export async function deleteResearch(id: string): Promise<boolean> {
+  try {
+    const response = await fetch(`http://127.0.0.1:8000/api/research/${id}`, {
+      method: 'DELETE',
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return true;
+  } catch (error) {
+    console.error('Failed to delete research:', error);
+    return false;
+  }
+}

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { colors } from '@/lib/colors';
-import { streamResearch } from '@/lib/api';
+import { streamResearch, fetchHistory } from '@/lib/api';
 import InputSection from '@/components/InputSection';
 import AgentPipeline from '@/components/AgentPipeline';
 import ResultsDisplay from '@/components/ResultsDisplay';
@@ -87,22 +87,8 @@ export default function Home() {
           setState('results');
         }, 600);
 
-        // Save to history
+        // Notify sidebar to refresh history (backend saves automatically)
         if (typeof window !== 'undefined') {
-          const newItem: ResearchItem = {
-            id: Date.now().toString(),
-            input,
-            type,
-            content: event.content || '',
-            timestamp: Date.now(),
-          };
-
-          const existing = localStorage.getItem('researchHistory');
-          const history = existing ? JSON.parse(existing) : [];
-          const updated = [newItem, ...history];
-          localStorage.setItem('researchHistory', JSON.stringify(updated));
-
-          // Dispatch event to notify sidebar
           window.dispatchEvent(new Event('researchSaved'));
         }
       } else if (event.type === 'error') {

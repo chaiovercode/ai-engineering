@@ -1,5 +1,7 @@
 import sys
 import os
+import uuid
+from datetime import datetime
 
 # Add parent directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -26,6 +28,11 @@ tasks_module = importlib.util.module_from_spec(tasks_spec)
 sys.path.insert(0, pipeline_path)
 tasks_spec.loader.exec_module(tasks_module)
 get_research_tasks = tasks_module.get_research_tasks
+
+# Import database models
+from database import SessionLocal
+from models import ResearchResult
+
 
 class CrewService:
     def __init__(self):
@@ -87,6 +94,15 @@ Output the content with ==TEXT== markers around important passages that should b
         highlighted = __import__('re').sub(r'==(.*?)==', replace_highlight, highlighted)
         return highlighted
 
+    def _extract_title(self, content: str) -> str:
+        """Extract title from first non-empty line of content"""
+        lines = content.split('\n')
+        for line in lines:
+            clean = line.strip().replace('#', '').strip()
+            if clean and len(clean) > 0:
+                return clean[:200]  # Max 200 chars
+        return "Untitled Research"
+
     def generate_research(self, input_text: str, input_type: str, mode: str, callback):
         """
         Run CrewAI pipeline with callbacks for real-time updates
@@ -95,8 +111,9 @@ Output the content with ==TEXT== markers around important passages that should b
         - agent_start(agent_role, message)
         - agent_progress(agent_role, progress, message)
         - agent_complete(agent_role, output)
-        - complete(content)
+        - complete(content, research_id)
         """
+        start_time = datetime.now()
         try:
             import time
             import threading
@@ -250,9 +267,31 @@ Output the content with ==TEXT== markers around important passages that should b
             # Highlight important content with pastel colors
             final_content = self.highlight_content(humanized_content)
 
-            # Send final result
+            # Save to database
+            research_id = str(uuid.uuid4())
+            processing_time = int((datetime.now() - start_time).total_seconds() * 1000)
+
+            db = SessionLocal()
+            try:
+                research = ResearchResult(
+                    id=research_id,
+                    input=input_text,
+                    input_type=input_type,
+                    mode=mode,
+                    content=final_content,
+                    title=self._extract_title(final_content),
+                    status='complete',
+                    processing_time_ms=processing_time
+                )
+                db.add(research)
+                db.commit()
+            finally:
+                db.close()
+
+            # Send final result with research ID
             callback({
                 'type': 'complete',
+                'research_id': research_id,
                 'content': final_content,
             })
 

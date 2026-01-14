@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { colors } from '@/lib/colors';
+import { fetchHistory, deleteResearch } from '@/lib/api';
 
 interface ResearchItem {
   id: string;
@@ -31,29 +32,28 @@ export default function ResearchSidebar({ onSelectResearch }: ResearchSidebarPro
     return () => window.removeEventListener('researchSaved', handleResearchSaved);
   }, []);
 
-  const loadHistory = () => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('researchHistory');
-      if (saved) {
-        try {
-          setHistory(JSON.parse(saved));
-        } catch (err) {
-          console.error('Failed to load history:', err);
-        }
-      }
+  const loadHistory = async () => {
+    try {
+      const { items } = await fetchHistory();
+      setHistory(items);
+    } catch (err) {
+      console.error('Failed to load history:', err);
     }
   };
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const updated = history.filter((item) => item.id !== id);
-    localStorage.setItem('researchHistory', JSON.stringify(updated));
-    setHistory(updated);
+    const success = await deleteResearch(id);
+    if (success) {
+      const updated = history.filter((item) => item.id !== id);
+      setHistory(updated);
+    }
   };
 
   const router = useRouter();
 
   const handleSelect = (item: ResearchItem) => {
+    // Navigate to the chat page with this research ID
     router.push(`/chat/${item.id}`);
     setIsOpen(false);
   };

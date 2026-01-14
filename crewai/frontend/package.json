@@ -20,7 +20,7 @@
     "autoprefixer": "^10",
     "postcss": "^8",
     "framer-motion": "^10",
-    "lucide-react": "^latest",
+    "lucide-react": "^0.263.1",
     "react-markdown": "^9",
     "remark-gfm": "^4"
   },
