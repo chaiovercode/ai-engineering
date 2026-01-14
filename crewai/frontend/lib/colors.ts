@@ -1,26 +1,26 @@
 export const colors = {
-  // Primary colors
-  primary: '#4A423A',       // Deep Taupe
-  secondary: '#DEDBC0',     // Soft Beige
-  accent: '#A0B09A',        // Sage Green
-  accentAlt: '#5D6D7E',     // Slate Gray
+  // The Study - Warm candlelit library aesthetic
+  primary: '#C4956A',         // Aged Copper
+  secondary: '#1A1816',       // Deep Espresso
+  accent: '#D4A574',          // Warm Amber
+  accentAlt: '#8B7355',       // Weathered Bronze
 
-  // Text colors
-  text: '#4A423A',          // Deep Taupe
-  textLight: '#5D6D7E',     // Slate Gray
-  textMuted: '#9A9A9A',     // Light Gray
+  // Text - Parchment tones, easy on eyes
+  text: '#C8BEB4',            // Warm Parchment
+  textLight: '#9A918A',       // Faded Ink
+  textMuted: '#5A5550',       // Soft Shadow
 
-  // Background colors
-  background: '#F7F7F0',    // Warm White (Base)
-  surface: '#DEDBC0',       // Soft Beige (Secondary)
-  cardBg: '#FDFCFA',        // Card background
+  // Background - Rich, warm darks
+  background: '#0F0E0D',      // Midnight Oak
+  surface: '#1A1816',         // Dark Walnut
+  cardBg: '#141312',          // Aged Leather
 
-  // Status colors
-  success: '#A0B09A',       // Sage Green
-  warning: '#D4A853',       // Warm Gold
-  error: '#C85A54',         // Soft Red
+  // Status - Muted, sophisticated
+  success: '#7A9A7A',         // Sage Leaf
+  warning: '#C4956A',         // Copper Glow
+  error: '#A67070',           // Dusty Rose
 
   // Borders & shadows
-  border: '#E0DDD8',        // Light border
-  shadow: 'rgba(74, 66, 58, 0.08)', // Soft shadow
+  border: '#2A2624',          // Shadow Line
+  shadow: 'rgba(0, 0, 0, 0.4)',
 };

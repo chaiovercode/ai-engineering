@@ -39,6 +39,14 @@ async def startup_event():
     """Initialize database on startup"""
     init_db()
 
+    # Log LangSmith status
+    langsmith_enabled = os.getenv('LANGCHAIN_TRACING_V2', '').lower() == 'true'
+    langsmith_project = os.getenv('LANGCHAIN_PROJECT', 'default')
+    if langsmith_enabled:
+        print(f"✓ LangSmith tracing enabled - Project: {langsmith_project}")
+    else:
+        print("○ LangSmith tracing disabled")
+
 
 @app.get('/api/history')
 async def get_history(limit: int = 50, db: Session = Depends(get_db)):

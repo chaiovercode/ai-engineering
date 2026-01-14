@@ -3,7 +3,6 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { colors } from '@/lib/colors';
-import { fetchHistory } from '@/lib/api';
 import ResultsDisplay from '@/components/ResultsDisplay';
 import ResearchSidebar from '@/components/ResearchSidebar';
 
@@ -55,7 +54,7 @@ export default function ChatPage() {
     }
   }, [id, router]);
 
-  const handleShowHistory = (content: string) => {
+  const handleShowHistory = (_content: string) => {
     // This is called when user clicks on a research item from sidebar
     // The sidebar will navigate directly, so we don't need to do anything here
     // The useEffect above will fetch the new research based on the URL param
@@ -107,10 +106,8 @@ export default function ChatPage() {
               <div style={{ width: '100%', maxWidth: '900px' }}>
                 <div
                   style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
                     marginBottom: '32px',
+                    textAlign: 'center',
                   }}
                 >
                   <h2
@@ -118,36 +115,10 @@ export default function ChatPage() {
                       fontSize: '18px',
                       fontWeight: 400,
                       color: colors.text,
-                      marginLeft: '30px',
                     }}
                   >
                     {research.input}
                   </h2>
-                  <button
-                    onClick={() => router.push('/')}
-                    style={{
-                      padding: '10px 16px',
-                      fontSize: '12px',
-                      backgroundColor: 'transparent',
-                      color: colors.accent,
-                      border: `1px solid ${colors.accent}`,
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontFamily: 'inherit',
-                      transition: 'all 200ms ease',
-                      marginRight: '30px',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = colors.accent;
-                      e.currentTarget.style.color = '#ffffff';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = 'transparent';
-                      e.currentTarget.style.color = colors.accent;
-                    }}
-                  >
-                    new research
-                  </button>
                 </div>
 
                 <ResultsDisplay

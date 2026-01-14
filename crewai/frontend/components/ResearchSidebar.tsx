@@ -17,7 +17,7 @@ interface ResearchSidebarProps {
   onSelectResearch: (content: string) => void;
 }
 
-export default function ResearchSidebar({ onSelectResearch }: ResearchSidebarProps) {
+export default function ResearchSidebar({ onSelectResearch: _onSelectResearch }: ResearchSidebarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [history, setHistory] = useState<ResearchItem[]>([]);
 
@@ -53,7 +53,6 @@ export default function ResearchSidebar({ onSelectResearch }: ResearchSidebarPro
   const router = useRouter();
 
   const handleSelect = (item: ResearchItem) => {
-    // Navigate to the chat page with this research ID
     router.push(`/chat/${item.id}`);
     setIsOpen(false);
   };
@@ -67,141 +66,273 @@ export default function ResearchSidebar({ onSelectResearch }: ResearchSidebarPro
     const diffDays = Math.floor(diffMs / 86400000);
 
     if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+    if (diffMins < 60) return `${diffMins}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    if (diffDays < 7) return `${diffDays}d`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
 
   return (
     <>
-      {/* Toggle button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        style={{
-          position: 'fixed',
-          top: '10px',
-          left: '20px',
-          width: '50px',
-          height: '50px',
-          backgroundColor: colors.primary,
-          color: '#ffffff',
-          border: 'none',
-          borderRadius: '0px',
-          cursor: 'pointer',
-          fontSize: '20px',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 999,
-          transition: 'all 200ms ease',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'scale(1.05)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'scale(1)';
-        }}
-      >
-        {isOpen ? '✕' : '≡'}
-      </button>
+      {/* Toggle button - only visible when sidebar closed */}
+      {!isOpen && (
+        <>
+          <button
+            onClick={() => setIsOpen(true)}
+            style={{
+              position: 'fixed',
+              top: '20px',
+              left: '20px',
+              width: '40px',
+              height: '40px',
+              backgroundColor: 'transparent',
+              color: colors.textMuted,
+              border: `1px solid ${colors.border}`,
+              borderRadius: '2px',
+              cursor: 'pointer',
+              fontFamily: '"Outfit", sans-serif',
+              fontSize: '16px',
+              fontWeight: 300,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 999,
+              transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = colors.accent;
+              e.currentTarget.style.color = colors.accent;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = colors.border;
+              e.currentTarget.style.color = colors.textMuted;
+            }}
+          >
+            ☰
+          </button>
+
+          {/* New inquiry button - below hamburger when collapsed */}
+          <button
+            onClick={() => router.push('/')}
+            style={{
+              position: 'fixed',
+              top: '70px',
+              left: '20px',
+              width: '40px',
+              height: '40px',
+              backgroundColor: colors.accent,
+              color: colors.background,
+              border: 'none',
+              borderRadius: '2px',
+              cursor: 'pointer',
+              fontFamily: '"Outfit", sans-serif',
+              fontSize: '22px',
+              fontWeight: 300,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 999,
+              transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '0.85';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1';
+            }}
+          >
+            +
+          </button>
+        </>
+      )}
 
       {/* Sidebar */}
       <div
         style={{
           position: 'fixed',
           top: 0,
-          left: isOpen ? '0px' : '-400px',
-          width: '360px',
+          left: isOpen ? '0px' : '-340px',
+          width: '320px',
           height: '100vh',
           backgroundColor: colors.cardBg,
           borderRight: `1px solid ${colors.border}`,
           zIndex: 998,
           overflowY: 'auto',
-          transition: 'left 300ms ease',
+          transition: 'left 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
         }}
       >
-        {/* Sidebar header */}
+        {/* Sidebar top bar with close and new buttons */}
         <div
           style={{
-            padding: '20px 20px 20px 20px',
-            borderBottom: `1px solid ${colors.border}`,
+            padding: '20px 24px',
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'center',
-            minHeight: '70px',
           }}
         >
-          <h3
+          {/* Close button */}
+          <button
+            onClick={() => setIsOpen(false)}
             style={{
-              fontSize: '14px',
-              fontWeight: 400,
-              color: colors.text,
-              marginLeft: '100px',
+              width: '40px',
+              height: '40px',
+              backgroundColor: 'transparent',
+              color: colors.textMuted,
+              border: `1px solid ${colors.border}`,
+              borderRadius: '2px',
+              cursor: 'pointer',
+              fontFamily: '"Outfit", sans-serif',
+              fontSize: '18px',
+              fontWeight: 300,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = colors.accent;
+              e.currentTarget.style.color = colors.accent;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = colors.border;
+              e.currentTarget.style.color = colors.textMuted;
             }}
           >
-            research history
-          </h3>
+            ×
+          </button>
+
+          {/* New inquiry button */}
+          <button
+            onClick={() => {
+              router.push('/');
+              setIsOpen(false);
+            }}
+            style={{
+              width: '40px',
+              height: '40px',
+              backgroundColor: colors.accent,
+              color: colors.background,
+              border: 'none',
+              borderRadius: '2px',
+              cursor: 'pointer',
+              fontFamily: '"Outfit", sans-serif',
+              fontSize: '22px',
+              fontWeight: 300,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              transition: 'all 0.3s ease',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '0.85';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1';
+            }}
+          >
+            +
+          </button>
+        </div>
+
+        {/* Sidebar header */}
+        <div
+          style={{
+            padding: '16px 24px',
+          }}
+        >
+          <p
+            style={{
+              fontFamily: '"Outfit", sans-serif',
+              fontSize: '12px',
+              fontWeight: 400,
+              color: colors.textMuted,
+              letterSpacing: '0.05em',
+            }}
+          >
+            past inquiries
+          </p>
         </div>
 
         {/* History items */}
-        <div style={{ padding: '16px' }}>
+        <div style={{ padding: '20px' }}>
           {history.length === 0 ? (
-            <p
+            <div
               style={{
-                fontSize: '13px',
-                color: colors.textMuted,
                 textAlign: 'center',
-                padding: '20px',
+                padding: '40px 20px',
               }}
             >
-              no research yet
-            </p>
+              <p
+                style={{
+                  fontFamily: '"Cormorant Garamond", Georgia, serif',
+                  fontSize: '14px',
+                  fontStyle: 'italic',
+                  color: colors.textMuted,
+                  marginBottom: '8px',
+                }}
+              >
+                no research yet
+              </p>
+              <p
+                style={{
+                  fontFamily: '"Outfit", sans-serif',
+                  fontSize: '11px',
+                  color: colors.textMuted,
+                  opacity: 0.6,
+                }}
+              >
+                your inquiries will appear here
+              </p>
+            </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {history.map((item) => (
                 <div
                   key={item.id}
                   onClick={() => handleSelect(item)}
                   style={{
-                    padding: '12px',
-                    backgroundColor: colors.background,
+                    padding: '14px 16px',
+                    backgroundColor: 'transparent',
                     border: `1px solid ${colors.border}`,
-                    borderRadius: '6px',
+                    borderRadius: '2px',
                     cursor: 'pointer',
-                    transition: 'all 200ms ease',
+                    transition: 'all 0.3s ease',
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    gap: '8px',
+                    alignItems: 'center',
+                    gap: '12px',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = colors.surface;
-                    e.currentTarget.style.borderColor = colors.primary;
+                    e.currentTarget.style.backgroundColor = colors.background;
+                    e.currentTarget.style.borderColor = colors.accent + '40';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = colors.background;
+                    e.currentTarget.style.backgroundColor = 'transparent';
                     e.currentTarget.style.borderColor = colors.border;
                   }}
                 >
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p
                       style={{
+                        fontFamily: '"Outfit", sans-serif',
                         fontSize: '13px',
-                        fontWeight: 500,
+                        fontWeight: 400,
                         color: colors.text,
                         marginBottom: '4px',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
+                        letterSpacing: '0.01em',
                       }}
                     >
                       {item.input}
                     </p>
                     <p
                       style={{
-                        fontSize: '12px',
+                        fontFamily: '"Outfit", sans-serif',
+                        fontSize: '11px',
                         color: colors.textMuted,
+                        letterSpacing: '0.05em',
                       }}
                     >
                       {formatTime(item.timestamp)}
@@ -212,19 +343,58 @@ export default function ResearchSidebar({ onSelectResearch }: ResearchSidebarPro
                     style={{
                       background: 'none',
                       border: 'none',
-                      color: colors.error,
+                      fontFamily: '"Outfit", sans-serif',
+                      color: colors.textMuted,
                       cursor: 'pointer',
-                      fontSize: '11px',
-                      padding: '4px 6px',
+                      fontSize: '10px',
+                      padding: '4px 8px',
                       fontWeight: 400,
+                      letterSpacing: '0.1em',
+                      opacity: 0.5,
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = colors.error;
+                      e.currentTarget.style.opacity = '1';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = colors.textMuted;
+                      e.currentTarget.style.opacity = '0.5';
                     }}
                   >
-                    del
+                    remove
                   </button>
                 </div>
               ))}
             </div>
           )}
+        </div>
+
+        {/* Sidebar footer */}
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            padding: '20px 24px',
+            borderTop: `1px solid ${colors.border}`,
+            backgroundColor: colors.cardBg,
+          }}
+        >
+          <p
+            style={{
+              fontFamily: '"Outfit", sans-serif',
+              fontSize: '10px',
+              color: colors.textMuted,
+              textAlign: 'center',
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              opacity: 0.5,
+            }}
+          >
+            zensar research
+          </p>
         </div>
       </div>
 
@@ -238,8 +408,9 @@ export default function ResearchSidebar({ onSelectResearch }: ResearchSidebarPro
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.2)',
+            backgroundColor: 'rgba(0, 0, 0, 0.4)',
             zIndex: 997,
+            transition: 'opacity 0.3s ease',
           }}
         />
       )}

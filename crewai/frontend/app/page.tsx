@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { colors } from '@/lib/colors';
-import { streamResearch, fetchHistory } from '@/lib/api';
+import { streamResearch } from '@/lib/api';
 import InputSection from '@/components/InputSection';
 import AgentPipeline from '@/components/AgentPipeline';
 import ResultsDisplay from '@/components/ResultsDisplay';
@@ -15,14 +15,6 @@ interface AgentStatus {
   message: string;
 }
 
-interface ResearchItem {
-  id: string;
-  input: string;
-  type: 'topic' | 'url';
-  content: string;
-  timestamp: number;
-}
-
 export default function Home() {
   const [state, setState] = useState<'input' | 'generating' | 'results'>('input');
   const [agents, setAgents] = useState<AgentStatus[]>([
@@ -30,7 +22,6 @@ export default function Home() {
     { name: 'Blog Writer', status: 'waiting', progress: 0, message: '' },
     { name: 'Fact Checker', status: 'waiting', progress: 0, message: '' },
     { name: 'Content Editor', status: 'waiting', progress: 0, message: '' },
-    { name: 'SEO Specialist', status: 'waiting', progress: 0, message: '' },
   ]);
   const [results, setResults] = useState<string>('');
   const [currentInput, setCurrentInput] = useState<{ input: string; type: 'topic' | 'url' }>({
@@ -46,7 +37,6 @@ export default function Home() {
       { name: 'Blog Writer', status: 'waiting', progress: 0, message: '' },
       { name: 'Fact Checker', status: 'waiting', progress: 0, message: '' },
       { name: 'Content Editor', status: 'waiting', progress: 0, message: '' },
-      { name: 'SEO Specialist', status: 'waiting', progress: 0, message: '' },
     ]);
 
     await streamResearch(input, type, mode, (event) => {
@@ -122,25 +112,6 @@ export default function Home() {
           />
         )}
       </main>
-
-      {/* Simple footer */}
-      {state === 'input' && (
-        <footer
-          style={{
-            textAlign: 'center',
-            padding: '20px',
-            fontSize: '11px',
-            color: colors.textMuted,
-            borderTop: `1px solid ${colors.border}`,
-            height: '80px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <p style={{ margin: 0 }}>zensar research</p>
-        </footer>
-      )}
     </div>
   );
 }
