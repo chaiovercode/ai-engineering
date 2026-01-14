@@ -16,7 +16,7 @@ from database import SessionLocal
 from models import ResearchResult
 
 
-class CrewService:
+class ResearchService:
     def __init__(self):
         self.llm = ChatOpenAI(model="gpt-4o-mini")
 

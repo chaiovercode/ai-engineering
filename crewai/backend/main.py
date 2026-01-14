@@ -14,7 +14,7 @@ from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 
-from crew_service import CrewService
+from research_service import ResearchService
 from database import init_db, get_db
 from models import ResearchResult
 
@@ -30,8 +30,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize crew service
-crew_service = CrewService()
+# Initialize research service
+research_service = ResearchService()
 
 
 @app.on_event("startup")
@@ -101,13 +101,13 @@ async def generate_research(request: Request):
         event_queue = queue.Queue()
 
         def collect_event(event):
-            """Callback from crew_service to collect events"""
+            """Callback from research_service to collect events"""
             event_queue.put(event)
 
-        def run_crew():
-            """Run crew in a thread"""
+        def run_pipeline():
+            """Run research pipeline in a thread"""
             try:
-                crew_service.generate_research(input_text, input_type, mode, collect_event)
+                research_service.generate_research(input_text, input_type, mode, collect_event)
                 event_queue.put(None)  # Signal completion
             except Exception as e:
                 event_queue.put({
@@ -116,8 +116,8 @@ async def generate_research(request: Request):
                 })
                 event_queue.put(None)
 
-        # Start crew in background thread
-        thread = threading.Thread(target=run_crew, daemon=True)
+        # Start pipeline in background thread
+        thread = threading.Thread(target=run_pipeline, daemon=True)
         thread.start()
 
         # Stream events from queue
