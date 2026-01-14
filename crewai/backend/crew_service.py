@@ -21,6 +21,7 @@ content_strategist = agents_module.content_strategist
 blog_writer = agents_module.blog_writer
 editor = agents_module.editor
 seo_specialist = agents_module.seo_specialist
+fact_checker = agents_module.fact_checker
 
 # Load tasks module
 tasks_spec = importlib.util.spec_from_file_location("tasks", os.path.join(pipeline_path, "tasks.py"))
@@ -132,6 +133,12 @@ Output the content with ==TEXT== markers around important passages that should b
                     'Adding examples and case studies...',
                     'Crafting compelling conclusion...',
                 ],
+                'Fact Checker': [
+                    'Identifying factual claims...',
+                    'Verifying statistics and data...',
+                    'Cross-referencing sources...',
+                    'Correcting inaccuracies...',
+                ],
                 'Content Editor': [
                     'Checking grammar and spelling...',
                     'Improving sentence flow...',
@@ -146,89 +153,98 @@ Output the content with ==TEXT== markers around important passages that should b
                 ],
             }
 
-            # Track progress per agent
-            agent_progress_state = {}
+            # Agent order for sequential progress
+            agent_names = ['Content Strategist', 'Blog Writer', 'Fact Checker', 'Content Editor', 'SEO Specialist']
 
-            def _on_agent_start(agent_role: str) -> None:
-                agent_progress_state[agent_role] = {'phase_index': 0, 'progress': 10, 'running': True}
+            # Track state for sequential progress
+            progress_controller = {
+                'current_agent_index': 0,
+                'running': True,
+                'completed': False
+            }
 
-                callback({
-                    'type': 'agent_start',
-                    'agent': agent_role,
-                    'message': agent_phases[agent_role][0],
-                })
+            def run_sequential_progress():
+                """Run progress animation sequentially - one agent at a time"""
+                while progress_controller['running'] and not progress_controller['completed']:
+                    current_idx = progress_controller['current_agent_index']
+                    if current_idx >= len(agent_names):
+                        break
 
-                # Start periodic progress updates in background thread
-                def progress_animation():
-                    while agent_progress_state.get(agent_role, {}).get('running', False):
-                        time.sleep(1.2)  # Update every 1.2 seconds
+                    agent_name = agent_names[current_idx]
+                    phases = agent_phases.get(agent_name, ['Processing...'])
 
-                        state = agent_progress_state.get(agent_role, {})
-                        if state.get('running', False):
-                            phases = agent_phases.get(agent_role, ['Processing...'])
-                            phase_index = state.get('phase_index', 0)
-                            # Increment progress up to 95% (will reach 100% on completion)
-                            progress = min(state.get('progress', 10) + 15, 95)
+                    # Send agent start
+                    callback({
+                        'type': 'agent_start',
+                        'agent': agent_name,
+                        'message': phases[0],
+                    })
 
-                            # Send progress update
-                            message = phases[min(phase_index, len(phases) - 1)]
-                            callback({
-                                'type': 'agent_progress',
-                                'agent': agent_role,
-                                'progress': progress,
-                                'message': message,
-                            })
+                    # Animate progress from 0 to 95 for this agent
+                    progress = 5
+                    phase_index = 0
+                    while progress < 95 and progress_controller['running'] and not progress_controller['completed']:
+                        # Check if we should still be on this agent
+                        if progress_controller['current_agent_index'] != current_idx:
+                            break
 
-                            # Update state
-                            agent_progress_state[agent_role]['progress'] = progress
-                            agent_progress_state[agent_role]['phase_index'] = min(phase_index + 1, len(phases) - 1)
+                        time.sleep(1.5)  # Update every 1.5 seconds
 
-                thread = threading.Thread(target=progress_animation, daemon=True)
-                thread.start()
+                        if progress_controller['current_agent_index'] != current_idx:
+                            break
 
-            def _on_agent_progress(agent_role: str, progress: int, message: str) -> None:
-                callback({
-                    'type': 'agent_progress',
-                    'agent': agent_role,
-                    'progress': progress,
-                    'message': message,
-                })
+                        progress = min(progress + 12, 95)
+                        phase_index = min(phase_index + 1, len(phases) - 1)
 
-            def _on_agent_complete(agent_role: str, output: str) -> None:
-                # Stop progress updates for this agent
-                if agent_role in agent_progress_state:
-                    agent_progress_state[agent_role]['running'] = False
+                        callback({
+                            'type': 'agent_progress',
+                            'agent': agent_name,
+                            'progress': progress,
+                            'message': phases[phase_index],
+                        })
 
-                callback({
-                    'type': 'agent_progress',
-                    'agent': agent_role,
-                    'progress': 100,
-                    'message': '',  # Empty message, status text will show "complete"
-                })
+                    # If still on this agent, wait for completion signal or timeout
+                    wait_count = 0
+                    while (progress_controller['current_agent_index'] == current_idx and
+                           progress_controller['running'] and
+                           not progress_controller['completed'] and
+                           wait_count < 40):  # Max 60 seconds per agent
+                        time.sleep(1.5)
+                        wait_count += 1
 
-                callback({
-                    'type': 'agent_complete',
-                    'agent': agent_role,
-                    'output': output,
-                })
+                    # Mark agent complete if we're moving to next
+                    if progress_controller['current_agent_index'] > current_idx or progress_controller['completed']:
+                        callback({
+                            'type': 'agent_progress',
+                            'agent': agent_name,
+                            'progress': 100,
+                            'message': '',
+                        })
+                        callback({
+                            'type': 'agent_complete',
+                            'agent': agent_name,
+                            'output': '',
+                        })
+
+            def advance_to_next_agent():
+                """Move to the next agent in sequence"""
+                progress_controller['current_agent_index'] += 1
 
             # Get agents
-            agents = [content_strategist, blog_writer, editor, seo_specialist]
+            agents = [content_strategist, blog_writer, fact_checker, editor, seo_specialist]
 
-            # Get tasks - each task's agent calls the callbacks
+            # Get tasks (callbacks not used directly by tasks anymore)
             tasks = get_research_tasks(
                 input_text,
                 mode,
-                _on_agent_start,
-                _on_agent_progress,
-                _on_agent_complete,
+                lambda x: None,  # Not used
+                lambda x, y, z: None,  # Not used
+                lambda x, y: None,  # Not used
             )
 
-            # Pre-start all agents to show initial states
-            for i, agent in enumerate(agents):
-                _on_agent_start(agent.role)
-                # Stagger agent start times for visual flow
-                time.sleep(0.3)
+            # Start progress animation in background
+            progress_thread = threading.Thread(target=run_sequential_progress, daemon=True)
+            progress_thread.start()
 
             # Create crew
             crew = Crew(
@@ -237,13 +253,40 @@ Output the content with ==TEXT== markers around important passages that should b
                 verbose=False,
             )
 
-            # Execute crew
+            # Execute crew (this blocks until all tasks complete)
+            # Advance agents based on estimated timing
+            def advance_agents_periodically():
+                """Advance agents at intervals to simulate real progress"""
+                # Estimate ~15-20 seconds per agent for a total of ~75-100 seconds
+                for i in range(len(agent_names) - 1):
+                    time.sleep(18)  # Wait before advancing to next agent
+                    if not progress_controller['completed']:
+                        advance_to_next_agent()
+
+            advance_thread = threading.Thread(target=advance_agents_periodically, daemon=True)
+            advance_thread.start()
+
             result = crew.kickoff()
 
-            # Mark all agents as complete in sequence
-            for i, agent in enumerate(agents):
-                _on_agent_complete(agent.role, str(result))
-                time.sleep(0.2)
+            # Mark as completed
+            progress_controller['completed'] = True
+            progress_controller['running'] = False
+
+            # Ensure all agents show as complete
+            time.sleep(0.5)
+            for agent_name in agent_names:
+                callback({
+                    'type': 'agent_progress',
+                    'agent': agent_name,
+                    'progress': 100,
+                    'message': '',
+                })
+                callback({
+                    'type': 'agent_complete',
+                    'agent': agent_name,
+                    'output': str(result),
+                })
+                time.sleep(0.1)
 
             # Send status update that we're humanizing the output
             callback({

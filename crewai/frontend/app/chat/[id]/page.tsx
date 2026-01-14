@@ -22,6 +22,7 @@ export default function ChatPage() {
 
   const [research, setResearch] = useState<ResearchItem | null>(null);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     // Load research from API
@@ -32,14 +33,20 @@ export default function ChatPage() {
           throw new Error('Research not found');
         }
         const data = await response.json();
+        // Check if response has error field (shouldn't happen now with proper 404)
+        if (data.error) {
+          throw new Error(data.error);
+        }
         setResearch(data);
         setLoading(false);
       } catch (err) {
         console.error('Failed to load research:', err);
-        // Research not found, redirect to home
+        setLoading(false);
+        setNotFound(true);
+        // Research not found, redirect to home after brief delay
         setTimeout(() => {
           router.push('/');
-        }, 300);
+        }, 1500);
       }
     };
 
@@ -71,6 +78,22 @@ export default function ChatPage() {
             }}
           >
             loading...
+          </div>
+        ) : notFound ? (
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'center',
+              height: '100vh',
+              fontSize: '14px',
+              color: colors.textMuted,
+              gap: '12px',
+            }}
+          >
+            <span>research not found</span>
+            <span style={{ fontSize: '12px' }}>redirecting to home...</span>
           </div>
         ) : research ? (
           <>

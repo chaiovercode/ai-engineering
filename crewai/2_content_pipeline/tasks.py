@@ -5,7 +5,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from crewai import Task
-from agents import content_strategist, blog_writer, editor, seo_specialist
+from agents import content_strategist, blog_writer, editor, seo_specialist, fact_checker
 
 
 def get_research_tasks(topic: str, mode: str, on_start, on_progress, on_complete):
@@ -42,22 +42,24 @@ def get_research_tasks(topic: str, mode: str, on_start, on_progress, on_complete
 
         writing_desc = """Using the research, write something that actually hits.
 
+        IMPORTANT - Use proper markdown formatting:
+        - Start with # for the main title
+        - Use ## for major sections
+        - Use ### for subsections
+
         Keep it:
         1. Real and relatable from the jump
-        2. Organized but not boring
+        2. Organized with clear headings (# ## ###)
         3. Packed with actual facts and insights
         4. Chill but smart (you know the vibe)
         5. Stuff people can actually use
-        6. Ending that makes sense
 
         Make it something people actually want to read."""
-        writing_output = """A piece that:
-        - Opens strong and keeps it real
-        - Has clear sections that flow
-        - Uses facts and quotes naturally
-        - Keeps it conversational but smart
-        - Has actionable takeaways
-        - Lands the ending"""
+        writing_output = """A piece with proper markdown structure:
+        - # Main title at the top
+        - ## Section headings throughout
+        - ### Subsections where needed
+        - Clear flow and engaging content"""
 
         editing_desc = """Polish this piece without losing the vibe.
 
@@ -78,24 +80,32 @@ def get_research_tasks(topic: str, mode: str, on_start, on_progress, on_complete
         - All the facts still there
         - Ready to drop"""
 
-        seo_desc = """Make this optimized for search but keep it real.
+        seo_desc = """Quick SEO polish - just the essentials:
+        1. Make sure the headline works for search
+        2. Add H2/H3 headings if missing
+        3. Keep it natural, no keyword stuffing
 
-        Work on:
-        1. Keywords that feel natural
-        2. Headlines that slap AND work for search
-        3. Proper heading structure
-        4. Keep it readable (no keyword stuffing)
-        5. Help search engines understand it
-        6. Internal links where they make sense
+        Don't overthink it. Light touch only."""
+        seo_output = """Same content with:
+        - Search-friendly headline
+        - Clear heading structure
+        - Ready to publish"""
 
-        Don't sacrifice the vibe for SEO."""
-        seo_output = """A piece that:
-        - Has a headline that pops and ranks
-        - Good heading structure throughout
-        - Keywords fit naturally
-        - Still reads smooth
-        - Search engines can understand it
-        - Ready to share"""
+        fact_check_desc_genz = """CRITICAL: You MUST use the duckduckgo_search tool to verify facts.
+
+        For EVERY factual claim (stats, records, dates, quotes):
+        1. USE THE SEARCH TOOL to look it up
+        2. Compare what the content says vs what you find
+        3. If wrong, REPLACE with the correct info from your search
+        4. If you can't verify it, REMOVE the claim
+
+        Example: If content says "scored 50 centuries" - SEARCH for the actual number and correct it.
+
+        DO NOT just pass through content. Actually search and verify each claim."""
+        fact_check_output_genz = """Fact-checked content where:
+        - Every stat was searched and verified
+        - Wrong facts were corrected with real data
+        - Unverifiable claims were removed"""
 
     else:  # analytical mode
         research_desc = f"""Conduct comprehensive research on: "{topic}"
@@ -119,22 +129,24 @@ def get_research_tasks(topic: str, mode: str, on_start, on_progress, on_complete
 
         writing_desc = """Using the research, write an analytical piece on this topic.
 
+        IMPORTANT - Use proper markdown formatting:
+        - Start with # for the main title
+        - Use ## for major sections
+        - Use ### for subsections
+
         Requirements:
         1. Establish context and significance in the introduction
-        2. Organize arguments into logical sections with clear hierarchy
+        2. Organize with clear markdown headings (# ## ###)
         3. Integrate evidence, data, and quotes with proper attribution
         4. Maintain rigorous, professional tone throughout
-        5. Provide analysis and interpretation of findings
-        6. Conclude with synthesis and implications
+        5. Conclude with synthesis and implications
 
-        The piece should be comprehensive, well-researched, and intellectually rigorous."""
+        The piece should be comprehensive and well-structured with proper headings."""
         writing_output = """A complete analytical piece with:
-        - Contextual introduction
-        - Logically structured sections
-        - Evidence-based arguments
-        - Proper attribution of sources
-        - Deep analysis and interpretation
-        - Conclusion with broader implications"""
+        - # Main title at the top
+        - ## Section headings throughout
+        - ### Subsections where needed
+        - Evidence-based arguments with proper attribution"""
 
         editing_desc = """Review and refine this analytical piece for excellence.
 
@@ -155,25 +167,41 @@ def get_research_tasks(topic: str, mode: str, on_start, on_progress, on_complete
         - All facts verified and accurate
         - Ready for publication or distribution"""
 
-        seo_desc = """Optimize this analytical piece for discoverability.
+        seo_desc = """Light SEO optimization - essentials only:
+        1. Ensure headline is search-friendly
+        2. Verify proper H2/H3 heading structure
+        3. Keep keywords natural
 
-        Focus on:
-        1. Strategic keyword integration
-        2. SEO-effective headline optimization
-        3. Proper heading hierarchy (H2, H3, etc.)
-        4. Metadata considerations
-        5. Search engine readability
-        6. Strategic internal and external linking
-
-        Maintain analytical integrity while improving search visibility."""
-        seo_output = """An optimized piece that:
-        - Has an SEO-optimized, compelling headline
-        - Strategic heading structure
-        - Natural keyword integration
-        - Maintains analytical rigor
-        - Clear structure for search engines
-        - Strategic linking included
+        Preserve analytical quality. Minimal changes."""
+        seo_output = """Optimized content with:
+        - Search-friendly headline
+        - Proper heading hierarchy
         - Ready for publication"""
+
+        fact_check_desc = """CRITICAL: You MUST use the duckduckgo_search tool to verify facts.
+
+        For EVERY factual claim (statistics, records, dates, quotes):
+        1. USE THE SEARCH TOOL to look up the claim
+        2. Compare what the content states vs search results
+        3. If incorrect, REPLACE with accurate data from your search
+        4. If unverifiable, REMOVE the claim entirely
+
+        Example: If content says "revenue of $5 billion" - SEARCH and verify the actual figure.
+
+        DO NOT pass through content unchanged. Actively search and verify each factual claim."""
+        fact_check_output = """Rigorously fact-checked content where:
+        - Every statistic was searched and verified
+        - Incorrect data was replaced with accurate information
+        - Unverifiable claims were removed
+        - All facts now backed by search results"""
+
+    # Set fact-check variables based on mode
+    if mode == 'gen-z':
+        fact_check_desc_final = fact_check_desc_genz
+        fact_check_output_final = fact_check_output_genz
+    else:
+        fact_check_desc_final = fact_check_desc
+        fact_check_output_final = fact_check_output
 
     # Create tasks with mode-specific descriptions
     research_task = Task(
@@ -187,6 +215,13 @@ def get_research_tasks(topic: str, mode: str, on_start, on_progress, on_complete
         description=writing_desc,
         expected_output=writing_output,
         agent=blog_writer,
+        async_execution=False,
+    )
+
+    fact_check_task = Task(
+        description=fact_check_desc_final,
+        expected_output=fact_check_output_final,
+        agent=fact_checker,
         async_execution=False,
     )
 
@@ -204,4 +239,4 @@ def get_research_tasks(topic: str, mode: str, on_start, on_progress, on_complete
         async_execution=False,
     )
 
-    return [research_task, writing_task, editing_task, seo_task]
+    return [research_task, writing_task, fact_check_task, editing_task, seo_task]

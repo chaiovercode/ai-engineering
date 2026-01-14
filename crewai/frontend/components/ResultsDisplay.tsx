@@ -11,6 +11,15 @@ interface ResultsDisplayProps {
 }
 
 export default function ResultsDisplay({ content, onNewSearch }: ResultsDisplayProps) {
+  // Guard against undefined content
+  if (!content) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', padding: '40px', color: colors.textMuted }}>
+        Loading content...
+      </div>
+    );
+  }
+
   // Clean content: remove only outer markdown code block markers, preserve internal markdown
   const cleanedContent = content
     .replace(/^```markdown\n?/i, '') // Remove opening ```markdown
@@ -27,9 +36,9 @@ export default function ResultsDisplay({ content, onNewSearch }: ResultsDisplayP
 
     // First: Convert markdown headers to HTML (must be before paragraph wrapping)
     // Use multiline replacement with proper markers
-    htmlContent = htmlContent.replace(/^### (.*?)$/gm, '\n<h3 style="font-size: 16px; font-weight: 400; margin-bottom: 10px; margin-top: 16px; color: #4a423a;">$1</h3>\n');
-    htmlContent = htmlContent.replace(/^## (.*?)$/gm, '\n<h2 style="font-size: 20px; font-weight: 400; margin-bottom: 12px; margin-top: 24px; color: #4a423a;">$1</h2>\n');
-    htmlContent = htmlContent.replace(/^# (.*?)$/gm, '\n<h1 style="font-size: 24px; font-weight: 400; margin-bottom: 16px; margin-top: 0; color: #4a423a;">$1</h1>\n');
+    htmlContent = htmlContent.replace(/^### (.*?)$/gm, '\n<h3 style="font-size: 16px; font-weight: 600; margin-bottom: 10px; margin-top: 16px; color: #4a423a;">$1</h3>\n');
+    htmlContent = htmlContent.replace(/^## (.*?)$/gm, '\n<h2 style="font-size: 20px; font-weight: 600; margin-bottom: 12px; margin-top: 24px; color: #4a423a;">$1</h2>\n');
+    htmlContent = htmlContent.replace(/^# (.*?)$/gm, '\n<h1 style="font-size: 24px; font-weight: 600; margin-bottom: 16px; margin-top: 0; color: #4a423a;">$1</h1>\n');
 
     // Convert markdown bold to HTML
     htmlContent = htmlContent.replace(/\*\*(.*?)\*\*/g, '<strong style="font-weight: 600;">$1</strong>');

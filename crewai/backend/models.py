@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, Integer, DateTime, Text
-from datetime import datetime
+from datetime import datetime, timezone
 from database import Base
 
 
@@ -27,6 +27,6 @@ class ResearchResult(Base):
             'content': self.content,
             'title': self.title,
             'status': self.status,
-            'timestamp': int(self.created_at.timestamp() * 1000),
+            'timestamp': int(self.created_at.replace(tzinfo=timezone.utc).timestamp() * 1000),
             'created_at': self.created_at.isoformat(),
         }

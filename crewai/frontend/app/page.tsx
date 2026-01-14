@@ -28,6 +28,7 @@ export default function Home() {
   const [agents, setAgents] = useState<AgentStatus[]>([
     { name: 'Content Strategist', status: 'waiting', progress: 0, message: '' },
     { name: 'Blog Writer', status: 'waiting', progress: 0, message: '' },
+    { name: 'Fact Checker', status: 'waiting', progress: 0, message: '' },
     { name: 'Content Editor', status: 'waiting', progress: 0, message: '' },
     { name: 'SEO Specialist', status: 'waiting', progress: 0, message: '' },
   ]);
@@ -43,6 +44,7 @@ export default function Home() {
     setAgents([
       { name: 'Content Strategist', status: 'waiting', progress: 0, message: '' },
       { name: 'Blog Writer', status: 'waiting', progress: 0, message: '' },
+      { name: 'Fact Checker', status: 'waiting', progress: 0, message: '' },
       { name: 'Content Editor', status: 'waiting', progress: 0, message: '' },
       { name: 'SEO Specialist', status: 'waiting', progress: 0, message: '' },
     ]);

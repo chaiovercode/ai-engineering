@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from crewai import Agent
 from langchain_openai import ChatOpenAI
 from crewai.tools import tool
-from duckduckgo_search import DDGS
+from ddgs import DDGS
 
 # Initialize LLM
 llm = ChatOpenAI(model="gpt-4o-mini")
@@ -72,11 +72,30 @@ editor = Agent(
 # SEO Specialist Agent
 seo_specialist = Agent(
     role="SEO Specialist",
-    goal="Optimize the content for search engines while maintaining readability",
-    backstory="""You are an SEO expert who understands search engine optimization
-    without compromising content quality. You know how to incorporate keywords naturally
-    and structure content for better rankings.""",
+    goal="Quick SEO polish: headline optimization and heading structure only",
+    backstory="""You do fast, light-touch SEO. Check the headline works for search,
+    ensure H2/H3 headings exist, and you're done. No overthinking, minimal changes.""",
     tools=[],
+    llm=llm,
+    verbose=False,
+)
+
+# Fact Checker Agent
+fact_checker = Agent(
+    role="Fact Checker",
+    goal="USE THE SEARCH TOOL to verify and correct every factual claim",
+    backstory="""You are a fact checker who ALWAYS uses the duckduckgo_search tool.
+
+    YOUR PROCESS:
+    1. Find a factual claim (stat, date, record, quote)
+    2. USE duckduckgo_search to look it up
+    3. Compare: does the content match search results?
+    4. If wrong: REPLACE with correct data from search
+    5. If can't verify: REMOVE the claim
+
+    You NEVER assume facts are correct. You ALWAYS search to verify.
+    You NEVER pass content through unchanged without searching.""",
+    tools=[duckduckgo_search],
     llm=llm,
     verbose=False,
 )

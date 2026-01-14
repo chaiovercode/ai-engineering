@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 # Load environment variables FIRST before any other imports
 load_dotenv(os.path.join(os.path.dirname(__file__), '.env'))
 
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI, Request, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -59,7 +59,7 @@ async def get_research(id: str, db: Session = Depends(get_db)):
     """Get single research by ID"""
     research = db.query(ResearchResult).filter(ResearchResult.id == id).first()
     if not research:
-        return {'error': 'Research not found'}, 404
+        raise HTTPException(status_code=404, detail='Research not found')
     return research.to_dict()
 
 
@@ -68,7 +68,7 @@ async def delete_research(id: str, db: Session = Depends(get_db)):
     """Delete research by ID"""
     research = db.query(ResearchResult).filter(ResearchResult.id == id).first()
     if not research:
-        return {'error': 'Research not found'}, 404
+        raise HTTPException(status_code=404, detail='Research not found')
 
     db.delete(research)
     db.commit()
