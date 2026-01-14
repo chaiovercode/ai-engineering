@@ -32,14 +32,25 @@ export default function ChatPage() {
           const found = history.find((item) => item.id === id);
           if (found) {
             setResearch(found);
+            setLoading(false);
+          } else {
+            // Research was deleted, redirect to home after brief delay
+            setTimeout(() => {
+              router.push('/');
+            }, 300);
           }
         } catch (err) {
           console.error('Failed to load research:', err);
+          setLoading(false);
         }
+      } else {
+        // No history exists, redirect to home after brief delay
+        setTimeout(() => {
+          router.push('/');
+        }, 300);
       }
-      setLoading(false);
     }
-  }, [id]);
+  }, [id, router]);
 
   const handleShowHistory = (content: string) => {
     // Find and navigate to that research
@@ -139,20 +150,7 @@ export default function ChatPage() {
               </div>
             </div>
           </>
-        ) : (
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              height: '100vh',
-              fontSize: '14px',
-              color: colors.textLight,
-            }}
-          >
-            research not found
-          </div>
-        )}
+        ) : null}
       </main>
     </div>
   );
