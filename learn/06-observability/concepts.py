@@ -150,7 +150,81 @@ Error Metrics:
 
 
 # =============================================================================
-# CONCEPT 6: Debugging Workflow
+# CONCEPT 6: Simple Definitions (The Jargon-Free Guide)
+# =============================================================================
+"""
+Think of your RAG system like a student taking an open-book exam.
+
+QUALITY METRICS (How good is the answer?)
+-----------------------------------------
+
+Answer Relevance:
+    The Question: "Did I actually answer what you asked?"
+    Simple Def: If you ask "What is the capital of France?" and I say
+    "Paris," relevance is high. If I say "France has nice cheese,"
+    relevance is low.
+
+Faithfulness:
+    The Question: "Did I stick to the textbook (context)?"
+    Simple Def: This measures hallucinations. If the documents say
+    "Sky is Green" and your bot answers "Sky is Blue" (because it
+    knows that from real life), Faithfulness goes down. It *must*
+    rely on the provided text.
+
+
+RETRIEVAL METRICS (How good is the search?)
+-------------------------------------------
+
+Context Precision:
+    The Question: "How much junk did I pull up?"
+    Simple Def: If you retrieved 10 pages to answer a question, but
+    only 2 were useful, your precision is low. High precision means
+    very little noise.
+
+Context Recall:
+    The Question: "Did I find *everything* needed?"
+    Simple Def: If the answer requires 3 specific facts and your
+    search only found 2 of them, your recall is bad. You missed
+    a piece of the puzzle.
+
+MRR (Mean Reciprocal Rank):
+    The Question: "How far did I have to scroll to find the right doc?"
+    Simple Def:
+        - If the perfect document is #1 on the list = Score is 1.0
+        - If it's #2 = Score is 0.5
+        - If it's #10 = Score is 0.1
+        - You want this number close to 1.0
+
+
+SPEED METRICS (P50 & P99)
+-------------------------
+This is about Latency (how long the user waits).
+
+P50 (The Median / The "Average Joe"):
+    Definition: 50% of your users got an answer faster than this time.
+    Real Talk: This is the "normal" experience. If P50 is 2.69s,
+    most people wait about 3 seconds.
+
+P99 (The "Worst Case" / The Slowest 1%):
+    Definition: 99% of requests were faster than this; this represents
+    the slowest 1% of users.
+    Real Talk: This is your "lag spike." If P99 is 42s, it means 1 out
+    of every 100 users got stuck waiting 42 seconds. You usually look
+    at this to find bugs or massive documents that choke the system.
+
+
+QUICK SUMMARY CHECKLIST
+-----------------------
+    Faithfulness = Don't lie / Don't use outside info
+    Relevance    = Don't ramble
+    Precision    = Don't fetch junk docs
+    Recall       = Don't miss key docs
+    P99          = How bad is the lag for the unluckiest user?
+"""
+
+
+# =============================================================================
+# CONCEPT 7: Debugging Workflow
 # =============================================================================
 """
 When something goes wrong, use this workflow:
@@ -185,6 +259,94 @@ Example investigation:
     └── merge: 8s ✓
 
     Fix: Add timeout + fallback for web search
+"""
+
+
+# =============================================================================
+# CONCEPT 8: Senior-Level Strategy (Beyond Definitions)
+# =============================================================================
+"""
+Knowing definitions is Junior-level. Knowing WHEN and HOW to use them is Senior.
+
+OFFLINE VS ONLINE EVALUATION
+----------------------------
+You cannot run expensive RAGAS metrics on every chat in production.
+It would cost a fortune and be too slow.
+
+Offline Eval (The Lab):
+    When:  Before you deploy (CI/CD pipeline)
+    What:  Run RAGAS against a "Golden Dataset" - 50 manually verified
+           Q&A pairs that represent ideal behavior
+    Goal:  "Did my code change break the bot?"
+
+Online Eval (The Real World):
+    When:  Live user traffic
+    What:  Track User Feedback (thumbs up/down) and Latency (P99).
+           Run RAGAS on a random 1% sample, not 100%.
+    Goal:  "Are users happy right now?"
+
+
+TRACING VS METRICS (The "Why" vs "What")
+----------------------------------------
+Metrics tell you SOMETHING is wrong. Traces tell you WHY.
+
+    Metric:  "The error rate is 5%"
+             → Tells you something is broken
+
+    Trace:   "Show me Request ID #123 step-by-step"
+             → Tells you the LLM took 15s because Retriever
+               fetched a 5MB document
+
+    Strategy: Use Metrics to get ALERTS.
+              Use Tracing to find ROOT CAUSE.
+
+
+THE COST EQUATION (The Manager's Favorite)
+------------------------------------------
+For senior roles, you must care about money.
+
+Token Types:
+    Input Tokens  = Cheaper  (the prompt you send)
+    Output Tokens = Expensive (the response you get)
+
+Cost Monitoring Strategy:
+    - Track token usage PER USER to prevent budget drain
+    - Monitor "Mean Tokens per Query" to catch prompt bloat
+    - If costs spike, check if prompts are getting too long
+      or if retrieval is pulling too much context
+
+
+JUNIOR VS SENIOR ANSWERS
+------------------------
+┌─────────────────┬──────────────────────────┬─────────────────────────────────────┐
+│ Concept         │ Junior (Definition)      │ Senior (Strategy)                   │
+├─────────────────┼──────────────────────────┼─────────────────────────────────────┤
+│ RAGAS           │ "Measures Faithfulness   │ "I run RAGAS in CI/CD. Every PR     │
+│                 │  and Relevance"          │  runs against a Golden Dataset"     │
+├─────────────────┼──────────────────────────┼─────────────────────────────────────┤
+│ Faithfulness    │ "Did the AI hallucinate?"│ "Critical for compliance. If low,   │
+│                 │                          │  check if chunks are too small"     │
+├─────────────────┼──────────────────────────┼─────────────────────────────────────┤
+│ Context         │ "Signal-to-noise ratio"  │ "If low, my re-ranker isn't working.│
+│ Precision       │                          │  Consider switching to Cross-Encoder│
+├─────────────────┼──────────────────────────┼─────────────────────────────────────┤
+│ P99 Latency     │ "Slowest 1% of requests" │ "If spiking, use Tracing to find    │
+│                 │                          │  the slow step (big doc? timeout?)" │
+├─────────────────┼──────────────────────────┼─────────────────────────────────────┤
+│ User Feedback   │ "Thumbs up or down"      │ "This is Ground Truth. Filter by    │
+│                 │                          │  'thumbs down' to build failure set"│
+└─────────────────┴──────────────────────────┴─────────────────────────────────────┘
+
+
+COMMON INTERVIEW GOTCHA
+-----------------------
+Q: "RAGAS requires an LLM to grade an LLM. Isn't that slow and expensive?"
+
+A: "Exactly. That's why we don't run it on live traffic. We run it OFFLINE
+    on a small test set, or sample only 1% of production for QA."
+
+This answer shows you understand the Offline vs Online distinction -
+the key to running these tools in a real company.
 """
 
 
