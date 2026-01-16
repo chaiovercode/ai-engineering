@@ -48,4 +48,5 @@ dev = [
 [tool.uv.workspace]
 members = [
     "3.langgraph",
+    "05-orchestration",
 ]
