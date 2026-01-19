@@ -1,0 +1,17 @@
+[project]
+name = "langchain-masterclass"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "ipykernel>=7.1.0",
+    "langchain>=1.2.4",
+    "langchain-community>=0.4.1",
+    "langchain-google-genai>=4.2.0",
+    "langchain-groq>=1.1.1",
+    "langchain-openai>=1.1.7",
+    "langgraph>=1.0.6",
+    "langgraph-checkpoint-sqlite>=3.0.3",
+    "python-dotenv>=1.2.1",
+]
