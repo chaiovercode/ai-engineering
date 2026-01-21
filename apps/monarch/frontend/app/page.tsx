@@ -542,8 +542,8 @@ export default function Home() {
                   data={result}
                   isLoading={isLoading || (isGeneratingVariantB && activeVariant === "B")}
                   streaming={
-                    (activeVariant === "A" && !variantA.linkedin) ||
-                    (activeVariant === "B" && !variantB.linkedin && isGeneratingVariantB)
+                    (activeVariant === "A" && (!variantA.linkedin || !variantA.whatsapp)) ||
+                    (activeVariant === "B" && (!variantB.linkedin || !variantB.whatsapp) && isGeneratingVariantB)
                       ? streaming
                       : undefined
                   }
